@@ -29,12 +29,8 @@ knitr::opts_chunk$set(cache=TRUE,
 
 # Introduction
 
-In this assignement, I choose to work with the [Online News Popularity Dataset](https://archive.ics.uci.edu/dataset/332/online+news+popularity)
-a dataset consisting of 39,000 articles sourced from the Mashable website, covering a two-year period from January 7, 2013, to January 7, 2015
-This dataset summarizes a heterogeneous set of features about articles published by Mashable in a period of two years. The goal is to predict the number of shares in social networks (popularity).
-
-The data was collected during a two year period, from January 7 2013 to January 7 2015.
-
+In this assignement, I choose the [Online News Popularity Dataset](https://archive.ics.uci.edu/dataset/332/online+news+popularity) consisting of 39,000 articles sourced from the Mashable website, covering a two-year period from January 7, 2013, to January 7, 2015.
+This dataset summarizes a heterogeneous set of features about articles published by Mashable in a period of two years.
 
 ```{r}
 download.file('http://archive.ics.uci.edu/ml/machine-learning-databases/00332/OnlineNewsPopularity.zip', 'OnlineNewsPopularity.zip')
@@ -45,15 +41,68 @@ data <- read.csv(unz('OnlineNewsPopularity.zip',
 system('rm OnlineNewsPopularity.zip')
 ```
 
-
-
-# Problem 1. 
+# Problem 1. Summary Statistics Table
 ```{r}
 library(vtable)
 st(data)
 ```
 
+There are 61 attributes including
 
+- 2 non-predictive (url, timedelta)
+- 58 predictors which is categorized into 6 groups
+  - Words: 5 predictors (n_tokens_title, n_tokens_content, n_unique_tokens, avg_token_length, n_non_stop_words, n_non_stop_unique_tokens)
+  - Links: 5 predictors (num_hrefs, num_self_hrefs, self_reference_min/max/avg_shares)
+  - Digital Media: 2 predictors (num_imgs, num_videos)
+  - Time: 8 predictors (weekday_is_XXX, is_weekend)
+  - Keywords: 16 predictors (data_channel_is_XXX, num_keywords, kw_min/max/avg_min, kw_min/max/avg_max, kw_min/max/avg_avg)
+  - Natural Language Processing: 22 predictors
+- 1 goal field (shares)
 
+| Category                       | Feature                                              | Type (#)  |
+|--------------------------------|------------------------------------------------------|-----------|
+| **Non-predictive**             | URL of the article                                   | text (1)  |
+|                                | Days between the article publication and the dataset acquisition | time (1)|
+| **Words**                      | Number of words in the title                         | number (1)|
+|                                | Number of words in the article                       | number (1)|
+|                                | Average word length                                  | number (1)|
+|                                | Rate of non-stop words                               | ratio (1) |
+|                                | Rate of unique words                                 | ratio (1) |
+|                                | Rate of unique non-stop words                        | ratio (1) |
+| **Links**                      | Number of links                                      | number (1)|
+|                                | Number of Mashable article links                     | number (1)|
+|                                | Minimum, average and maximum number of shares of Mashable links | number (3) |
+| **Digital Media**             | Number of images                                     | number (1)|
+|                                | Number of videos                                     | number (1)|
+| **Time**                      | Day of the week                                      | nominal (1)|
+|                                | Published on a weekend?                              | bool (1)  |
+| **Keywords**                   | Number of keywords                                   | number (1)|
+|                                | Worst keyword (min./avg./max. shares)               | number (3)|
+|                                | Average keyword (min./avg./max. shares)             | number (3)|
+|                                | Best keyword (min./avg./max. shares)                | number (3)|
+|                                | Article category (lifestyle/entertainment/bus/socmed/tech/world) | nominal (1)|
+| **Natural Language Processing** | Closeness to top 5 LDA topics                        | ratio (5) |
+|                                | Title subjectivity                                   | ratio (1) |
+|                                | Article text subjectivity score and its absolute difference to 0.5 | ratio (2) |
+|                                | Title sentiment polarity                             | ratio (1) |
+|                                | Rate of positive and negative words                  | ratio (2) |
+|                                | Pos. words rate among non-neutral words              | ratio (1) |
+|                                | Neg. words rate among non-neutral words              | ratio (1) |
+|                                | Polarity of positive words (min./avg./max.)         | ratio (3) |
+|                                | Polarity of negative words (min./avg./max.)         | ratio (3) |
+|                                | Article text polarity score and its absolute difference to 0.5 | ratio (2) |
+| **Target**                     | Number of article Mashable shares                    | number (1)|
+
+The goal is to predict the number of shares in social networks (popularity). 
+
+# Problem 2. Bad Data Visualization
+
+TBD
+
+# Problem 3. Good Data Visualization
+
+TBD
+
+# Problem 4. Simple analysis
 
 TBD
