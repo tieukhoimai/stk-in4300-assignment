@@ -1,0 +1,108 @@
+---
+output: 
+  pdf_document:
+    citation_package: natbib
+    keep_tex: true
+    fig_caption: true
+    latex_engine: pdflatex
+title: "Assignment 1: Online News Popularity"
+author:
+- name: Khoi Mai Tieu
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+geometry: margin=1in
+fontfamily: libertine
+fontsize: 11pt
+endnote: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE,
+                      message=FALSE, warning=FALSE,
+                      fig.path='figs/',
+                      cache.path = '_cache/',
+                      fig.process = function(x) {
+                      x2 = sub('-\\d+([.][a-z]+)$', '\\1', x)
+                      if (file.rename(x, x2)) x2 else x
+                      })
+```
+
+
+# Introduction
+
+In this assignement, I choose the [Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance).
+This data approach student achievement in secondary education of two Portuguese schools. The data attributes include student grades, demographic, social and school related features and it was collected by using school reports and questionnaires.
+
+We have 2 datasets regarding the performance in two distinct subjects
+
+- Mathematics (student-mat.csv)
+- Portuguese language (student-por.csv)
+
+In this case, I will focus on the Mathematics dataset.
+```{r}
+df <- read.csv("assignment_1/data/student-mat.csv", header = TRUE, sep = ";")
+head(df)
+```
+
+# Problem 1. Summary Statistics Table
+```{r}
+str(df)
+```
+
+There are 61 attributes including
+
+- 2 non-predictive (url, timedelta)
+- 58 predictors which is categorized into 6 groups
+  - Words: 5 predictors (n_tokens_title, n_tokens_content, n_unique_tokens, avg_token_length, n_non_stop_words, n_non_stop_unique_tokens)
+  - Links: 5 predictors (num_hrefs, num_self_hrefs, self_reference_min/max/avg_shares)
+  - Digital Media: 2 predictors (num_imgs, num_videos)
+  - Time: 8 predictors (weekday_is_XXX, is_weekend)
+  - Keywords: 16 predictors (data_channel_is_XXX, num_keywords, kw_min/max/avg_min, kw_min/max/avg_max, kw_min/max/avg_avg)
+  - Natural Language Processing: 22 predictors
+- 1 goal field (shares)
+
+| Category                       | Feature                                              | Type (#)  |
+|--------------------------------|------------------------------------------------------|-----------|
+| **Non-predictive**             | URL of the article                                   | text (1)  |
+|                                | Days between the article publication and the dataset acquisition | time (1)|
+| **Words**                      | Number of words in the title                         | number (1)|
+|                                | Number of words in the article                       | number (1)|
+|                                | Average word length                                  | number (1)|
+|                                | Rate of non-stop words                               | ratio (1) |
+|                                | Rate of unique words                                 | ratio (1) |
+|                                | Rate of unique non-stop words                        | ratio (1) |
+| **Links**                      | Number of links                                      | number (1)|
+|                                | Number of Mashable article links                     | number (1)|
+|                                | Minimum, average and maximum number of shares of Mashable links | number (3) |
+| **Digital Media**             | Number of images                                     | number (1)|
+|                                | Number of videos                                     | number (1)|
+| **Time**                      | Day of the week                                      | nominal (1)|
+|                                | Published on a weekend?                              | bool (1)  |
+| **Keywords**                   | Number of keywords                                   | number (1)|
+|                                | Worst keyword (min./avg./max. shares)               | number (3)|
+|                                | Average keyword (min./avg./max. shares)             | number (3)|
+|                                | Best keyword (min./avg./max. shares)                | number (3)|
+|                                | Article category (lifestyle/entertainment/bus/socmed/tech/world) | nominal (1)|
+| **Natural Language Processing** | Closeness to top 5 LDA topics                        | ratio (5) |
+|                                | Title subjectivity                                   | ratio (1) |
+|                                | Article text subjectivity score and its absolute difference to 0.5 | ratio (2) |
+|                                | Title sentiment polarity                             | ratio (1) |
+|                                | Rate of positive and negative words                  | ratio (2) |
+|                                | Pos. words rate among non-neutral words              | ratio (1) |
+|                                | Neg. words rate among non-neutral words              | ratio (1) |
+|                                | Polarity of positive words (min./avg./max.)         | ratio (3) |
+|                                | Polarity of negative words (min./avg./max.)         | ratio (3) |
+|                                | Article text polarity score and its absolute difference to 0.5 | ratio (2) |
+| **Target**                     | Number of article Mashable shares                    | number (1)|
+
+
+# Problem 2. Bad Data Visualization
+
+
+
+# Problem 3. Good Data Visualization
+
+TBD
+
+# Problem 4. Simple analysis
+
+TBD
