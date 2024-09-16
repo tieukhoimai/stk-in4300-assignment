@@ -1,107 +1,125 @@
 ---
-output: 
-  pdf_document:
-    citation_package: natbib
-    keep_tex: true
-    fig_caption: true
-    latex_engine: pdflatex
-title: "Assignment 1: Online News Popularity"
-author:
-- name: Khoi Mai Tieu
-date: "`r format(Sys.time(), '%B %d, %Y')`"
-geometry: margin=1in
-fontfamily: libertine
-fontsize: 11pt
-endnote: no
+title: "TBD"
+date: "2024-09-16"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(cache=TRUE,
-                      message=FALSE, warning=FALSE,
-                      fig.path='figs/',
-                      cache.path = '_cache/',
-                      fig.process = function(x) {
-                      x2 = sub('-\\d+([.][a-z]+)$', '\\1', x)
-                      if (file.rename(x, x2)) x2 else x
-                      })
+knitr::opts_chunk$set(echo = TRUE)
 ```
-
 
 # Introduction
 
-In this assignement, I choose the [Online News Popularity Dataset](https://archive.ics.uci.edu/dataset/332/online+news+popularity) consisting of 39,000 articles sourced from the Mashable website, covering a two-year period from January 7, 2013, to January 7, 2015.
-This dataset summarizes a heterogeneous set of features about articles published by Mashable in a period of two years. The goal is to predict the number of shares in social networks (popularity). 
+For this assignment, I chose the [Student Performance dataset](https://archive.ics.uci.edu/dataset/320/student+performance), which looks at student achievement in secondary education at two Portuguese schools. The dataset includes student grades, as well as demographic, social, and school-related factors. The data was collected through school reports and surveys.
 
-```{r}
-download.file('http://archive.ics.uci.edu/ml/machine-learning-databases/00332/OnlineNewsPopularity.zip', 'OnlineNewsPopularity.zip')
+The dataset is divided into two subjects:
 
-data <- read.csv(unz('OnlineNewsPopularity.zip',
-                     'OnlineNewsPopularity/OnlineNewsPopularity.csv'),
-                 header = TRUE)
+- Mathematics (student-mat.csv)
+- Portuguese Language (student-por.csv)
 
-system('rm OnlineNewsPopularity.zip')
+In this case, I will focus on the Mathematics dataset.
+
+```{r, results='hide'}
+# Download the dataset
+download.file('https://archive.ics.uci.edu/static/public/320/student+performance.zip','student_performance.zip')
+unzip('student_performance.zip', files = 'student.zip')
+unzip('student.zip', files = 'student-mat.csv')
+
+# Load the dataset
+df <- read.csv('student-mat.csv', header = TRUE, sep = ';')
+
+# Remove zip and csv files
+file.remove(list.files(pattern = "\\.zip$|\\.csv$"))
 ```
 
 # Problem 1. Summary Statistics Table
-```{r}
-library(vtable)
-st(data)
+```{r, include = FALSE}
+str(df)
 ```
 
-There are 61 attributes including
+The dataset contains 33 columns and 395 rows. Here's a brief overview of the columns:
 
-- 2 non-predictive (url, timedelta)
-- 58 predictors which is categorized into 6 groups
-  - Words: 5 predictors (n_tokens_title, n_tokens_content, n_unique_tokens, avg_token_length, n_non_stop_words, n_non_stop_unique_tokens)
-  - Links: 5 predictors (num_hrefs, num_self_hrefs, self_reference_min/max/avg_shares)
-  - Digital Media: 2 predictors (num_imgs, num_videos)
-  - Time: 8 predictors (weekday_is_XXX, is_weekend)
-  - Keywords: 16 predictors (data_channel_is_XXX, num_keywords, kw_min/max/avg_min, kw_min/max/avg_max, kw_min/max/avg_avg)
-  - Natural Language Processing: 22 predictors
-- 1 goal field (shares)
+| Attribute   | Description                                                                                   | Type      |
+|-------------|-----------------------------------------------------------------------------------------------|-----------|
+| school      | Student's school (binary: 'GP' - Gabriel Pereira or 'MS' - Mousinho da Silveira)           | Categorical |
+| sex         | Student's sex (binary: 'F' - female or 'M' - male)                                          | Categorical |
+| age         | Student's age (numeric: from 15 to 22)                                                      | Numeric   |
+| address     | Student's home address type (binary: 'U' - urban or 'R' - rural)                           | Categorical |
+| famsize     | Family size (binary: 'LE3' - less or equal to 3 or 'GT3' - greater than 3)                 | Categorical |
+| Pstatus     | Parent's cohabitation status (binary: 'T' - living together or 'A' - apart)                 | Categorical |
+| Medu        | Mother's education (numeric: 0 - none, 1 - primary, 2 - 5th to 9th, 3 - secondary, 4 - higher) | Numeric   |
+| Fedu        | Father's education (numeric: 0 - none, 1 - primary, 2 - 5th to 9th, 3 - secondary, 4 - higher) | Numeric   |
+| Mjob        | Mother's job (nominal: 'teacher', 'health', 'services', 'at_home', 'other')                 | Categorical |
+| Fjob        | Father's job (nominal: 'teacher', 'health', 'services', 'at_home', 'other')                 | Categorical |
+| reason      | Reason to choose this school (nominal: 'close to home', 'reputation', 'course', 'other')    | Categorical |
+| guardian    | Student's guardian (nominal: 'mother', 'father', 'other')                                   | Categorical |
+| traveltime  | Home to school travel time (numeric: 1 - <15 min., 2 - 15 to 30 min., 3 - 30 min. to 1 hour, 4 - >1 hour) | Numeric   |
+| studytime   | Weekly study time (numeric: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, 4 - >10 hours) | Numeric   |
+| failures    | Number of past class failures (numeric: n if 1<=n<3, else 4)                                | Numeric   |
+| schoolsup   | Extra educational support (binary: yes or no)                                               | Categorical |
+| famsup      | Family educational support (binary: yes or no)                                              | Categorical |
+| paid        | Extra paid classes within the course subject (binary: yes or no)                             | Categorical |
+| activities  | Extra-curricular activities (binary: yes or no)                                             | Categorical |
+| nursery     | Attended nursery school (binary: yes or no)                                                 | Categorical |
+| higher      | Wants to take higher education (binary: yes or no)                                          | Categorical |
+| internet    | Internet access at home (binary: yes or no)                                                | Categorical |
+| romantic    | With a romantic relationship (binary: yes or no)                                            | Categorical |
+| famrel      | Quality of family relationships (numeric: from 1 - very bad to 5 - excellent)               | Numeric   |
+| freetime    | Free time after school (numeric: from 1 - very low to 5 - very high)                       | Numeric   |
+| goout       | Going out with friends (numeric: from 1 - very low to 5 - very high)                       | Numeric   |
+| Dalc        | Workday alcohol consumption (numeric: from 1 - very low to 5 - very high)                   | Numeric   |
+| Walc        | Weekend alcohol consumption (numeric: from 1 - very low to 5 - very high)                   | Numeric   |
+| health      | Current health status (numeric: from 1 - very bad to 5 - very good)                        | Numeric   |
+| absences    | Number of school absences (numeric: from 0 to 93)                                           | Numeric   |
+| G1          | First period grade (numeric: from 0 to 20)                                                  | Numeric   |
+| G2          | Second period grade (numeric: from 0 to 20)                                                 | Numeric   |
+| G3          | Final grade (numeric: from 0 to 20, output target)                                         | Numeric   |
 
-| Category                       | Feature                                              | Type (#)  |
-|--------------------------------|------------------------------------------------------|-----------|
-| **Non-predictive**             | URL of the article                                   | text (1)  |
-|                                | Days between the article publication and the dataset acquisition | time (1)|
-| **Words**                      | Number of words in the title                         | number (1)|
-|                                | Number of words in the article                       | number (1)|
-|                                | Average word length                                  | number (1)|
-|                                | Rate of non-stop words                               | ratio (1) |
-|                                | Rate of unique words                                 | ratio (1) |
-|                                | Rate of unique non-stop words                        | ratio (1) |
-| **Links**                      | Number of links                                      | number (1)|
-|                                | Number of Mashable article links                     | number (1)|
-|                                | Minimum, average and maximum number of shares of Mashable links | number (3) |
-| **Digital Media**             | Number of images                                     | number (1)|
-|                                | Number of videos                                     | number (1)|
-| **Time**                      | Day of the week                                      | nominal (1)|
-|                                | Published on a weekend?                              | bool (1)  |
-| **Keywords**                   | Number of keywords                                   | number (1)|
-|                                | Worst keyword (min./avg./max. shares)               | number (3)|
-|                                | Average keyword (min./avg./max. shares)             | number (3)|
-|                                | Best keyword (min./avg./max. shares)                | number (3)|
-|                                | Article category (lifestyle/entertainment/bus/socmed/tech/world) | nominal (1)|
-| **Natural Language Processing** | Closeness to top 5 LDA topics                        | ratio (5) |
-|                                | Title subjectivity                                   | ratio (1) |
-|                                | Article text subjectivity score and its absolute difference to 0.5 | ratio (2) |
-|                                | Title sentiment polarity                             | ratio (1) |
-|                                | Rate of positive and negative words                  | ratio (2) |
-|                                | Pos. words rate among non-neutral words              | ratio (1) |
-|                                | Neg. words rate among non-neutral words              | ratio (1) |
-|                                | Polarity of positive words (min./avg./max.)         | ratio (3) |
-|                                | Polarity of negative words (min./avg./max.)         | ratio (3) |
-|                                | Article text polarity score and its absolute difference to 0.5 | ratio (2) |
-| **Target**                     | Number of article Mashable shares                    | number (1)|
+It’s important to note that the final grade (G3) is strongly correlated with G1 and G2, the grades from earlier periods. Predicting G3 without using G1 and G2 is harder but more valuable.
 
+This dataset can be used for both classification and regression tasks. Some key questions we could explore include:
+
+- Can we predict student performance before classes begin?
+- What are the key factors affecting differences in student performance?
+
+```{r}
+library(vtable)
+st(df)
+```
 
 # Problem 2. Bad Data Visualization
 
 
+```{r}
+library(ggplot2)
+
+ggplot(df, aes(x = age)) +
+  geom_bar() +
+  labs(title = "Bad Plot: Bar Plot for Age", x = "Age", y = "Count")
+```
+
+```{r}
+ggplot(df, aes(x = "", fill = Mjob)) +
+  geom_bar(width = 1) +
+  coord_polar("y") +
+  labs(title = "Bad Plot: Pie Chart for Mother's Job")
+```
 
 # Problem 3. Good Data Visualization
 
-TBD
+```{r}
+ggplot(df, aes(x = age)) +
+  geom_histogram(binwidth = 1, color = "black") +
+  labs(title = "Correct Plot: Histogram for Age", x = "Age", y = "Frequency")
+
+```
+
+```{r}
+# Correct plot: Bar plot for categorical variable (Mjob)
+ggplot(df, aes(x = Mjob)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Correct Plot: Bar Plot for Mother's Job", x = "Mother's Job", y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 # Problem 4. Simple analysis
 

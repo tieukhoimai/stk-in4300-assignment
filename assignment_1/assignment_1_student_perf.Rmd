@@ -5,7 +5,7 @@ output:
     keep_tex: true
     fig_caption: true
     latex_engine: pdflatex
-title: "Assignment 1: Online News Popularity"
+title: "Student Performance"
 author:
 - name: Khoi Mai Tieu
 date: "`r format(Sys.time(), '%B %d, %Y')`"
@@ -54,7 +54,7 @@ file.remove(list.files(pattern = "\\.zip$|\\.csv$"))
 ```
 
 # Problem 1. Summary Statistics Table
-```{r}
+```{r, include = FALSE}
 str(df)
 ```
 
@@ -106,15 +106,42 @@ This dataset can be used for both classification and regression tasks. Some key 
 ```{r}
 library(vtable)
 st(df)
-````
+```
 
 # Problem 2. Bad Data Visualization
 
-TBD
+
+```{r}
+library(ggplot2)
+
+ggplot(df, aes(x = age)) +
+  geom_bar() +
+  labs(title = "Bad Plot: Bar Plot for Age", x = "Age", y = "Count")
+```
+
+```{r}
+ggplot(df, aes(x = "", fill = Mjob)) +
+  geom_bar(width = 1) +
+  coord_polar("y") +
+  labs(title = "Bad Plot: Pie Chart for Mother's Job")
+```
 
 # Problem 3. Good Data Visualization
 
-TBD
+```{r}
+ggplot(df, aes(x = age)) +
+  geom_histogram(binwidth = 1, color = "black") +
+  labs(title = "Correct Plot: Histogram for Age", x = "Age", y = "Frequency")
+
+```
+
+```{r}
+# Correct plot: Bar plot for categorical variable (Mjob)
+ggplot(df, aes(x = Mjob)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Correct Plot: Bar Plot for Mother's Job", x = "Mother's Job", y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 # Problem 4. Simple analysis
 
