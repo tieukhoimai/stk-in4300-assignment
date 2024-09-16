@@ -38,6 +38,7 @@ download.file('http://archive.ics.uci.edu/ml/machine-learning-databases/00332/On
 data <- read.csv(unz('OnlineNewsPopularity.zip',
                      'OnlineNewsPopularity/OnlineNewsPopularity.csv'),
                  header = TRUE)
+
 system('rm OnlineNewsPopularity.zip')
 ```
 
@@ -95,6 +96,7 @@ There are 61 attributes including
 
 
 # Problem 2. Bad Data Visualization
+
 
 
 # Problem 3. Good Data Visualization
