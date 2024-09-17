@@ -12,7 +12,7 @@
 
 <meta name="date" content="2024-09-16" />
 
-<title>Bike Sharing</title>
+<title>Assignment 1: Bike Sharing</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1844,12 +1844,17 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Bike Sharing</h1>
+<h1 class="title toc-ignore">Assignment 1: Bike Sharing</h1>
 <h4 class="date">2024-09-16</h4>
 
 </div>
 
 
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(vtable)</code></pre>
+<pre><code>## Loading required package: kableExtra</code></pre>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
 <p>For this assignment, I chose the <a href="https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset">Bike
@@ -2550,6 +2555,12 @@ summary(full.model)</code></pre>
 ## Residual standard error: 1340 on 720 degrees of freedom
 ## Multiple R-squared:  0.528,  Adjusted R-squared:  0.5214 
 ## F-statistic: 80.53 on 10 and 720 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>We see that multiple R-squared was 0.528. This indicates that around
+52.8% of the variance in bike rentals is explained by the selected
+independent variables. However, the Adjusted R-squared is slightly lower
+at 0.5214, suggesting that some non-significant variables might have
+been included, which slightly reduces the explanatory power of the
+model.</p>
 </div>
 <div id="model-selection-process" class="section level2">
 <h2>4.2. Model Selection Process</h2>
@@ -2598,6 +2609,7 @@ null.model &lt;- lm(y ~ 1, data = as.data.frame(X))</code></pre>
 <li>Start with the null model (only intercept)</li>
 <li>Adding variables based on significance</li>
 </ul>
+<pre class="r"><code>model.forward.aic &lt;- stepAIC(object = null.model, scope = full.model$terms, direction = &#39;forward&#39;)</code></pre>
 <pre class="r"><code>summary(model.forward.aic)</code></pre>
 <pre><code>## 
 ## Call:
@@ -2715,6 +2727,15 @@ summary(model.bestSubset.RSS)</code></pre>
 ## Residual standard error: 1340 on 720 degrees of freedom
 ## Multiple R-squared:  0.528,  Adjusted R-squared:  0.5214 
 ## F-statistic: 80.53 on 10 and 720 DF,  p-value: &lt; 2.2e-16</code></pre>
+<ul>
+<li>Through Backward Elimination, Forward Selection, and Stepwise
+Selection, significant variables were selected such as season, atemp,
+weathersit, hum, and windspeed, which were consistently found to be
+important.</li>
+<li>However, there are variables like mnth, holiday, and workingday that
+were less significant and had high p-values, indicating that they might
+not strongly affect the number of rentals.</li>
+</ul>
 </div>
 </div>
 <div id="model-performance-comparison" class="section level2">

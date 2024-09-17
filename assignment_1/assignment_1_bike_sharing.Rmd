@@ -2,9 +2,9 @@
 title: "Assignment 1: Bike Sharing"
 date: "2024-09-16"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, results='hide'}
@@ -130,12 +130,15 @@ X <- df[, c('season', 'mnth', 'holiday', 'weekday', 'workingday',
 cor(X)
 ```
 
+
 ## 4.1. Linear regression model with all available variables
 
 ```{r}
 full.model <- lm(y ~ ., data = X)
 summary(full.model)
 ```
+
+We see that multiple R-squared was 0.528. This indicates that around 52.8% of the variance in bike rentals is explained by the selected independent variables. However, the Adjusted R-squared is slightly lower at 0.5214, suggesting that some non-significant variables might have been included, which slightly reduces the explanatory power of the model.
 
 ## 4.2. Model Selection Process
 
@@ -221,6 +224,9 @@ variables.best.model <- allCombinations[[best.RSS[1]]][, index]
 model.bestSubset.RSS <- lm(y ~ ., data = as.data.frame(X[, variables.best.model]))
 summary(model.bestSubset.RSS)
 ```
+
+- Through Backward Elimination, Forward Selection, and Stepwise Selection, significant variables were selected such as season, atemp, weathersit, hum, and windspeed, which were consistently found to be important.
+- However, there are variables like mnth, holiday, and workingday that were less significant and had high p-values, indicating that they might not strongly affect the number of rentals.
 
 ## 4.3. Model Performance Comparison
 
