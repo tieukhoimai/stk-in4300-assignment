@@ -166,7 +166,7 @@ summary(model.backward.aic)
 
 ### 4.2.2. Forward Selection
 
--   Start with the null model (only intercept)
+-   Starting with the null model (only intercept)
 -   Adding variables based on significance
 
 ```{r results='hide'}
@@ -198,12 +198,9 @@ null.model <- lm(y ~ 1)
 result.AIC <- extractAIC(null.model)
 result.RSS <- cbind(1, deviance(null.model))
 
-for (i in 1:num_vars) {  # For each number of variables
-  for (j in 1:ncol(allCombinations[[i]])) {  # For each subset of size 'i'
-    # Fit model using current subset of variables
+for (i in 1:num_vars) {
+  for (j in 1:ncol(allCombinations[[i]])) {
     model <- lm(y ~ ., data = as.data.frame(X[, allCombinations[[i]][, j]]))
-    
-    # Store AIC and RSS for this model
     result.AIC <- rbind(result.AIC, extractAIC(model))
     result.RSS <- rbind(result.RSS, cbind(length(allCombinations[[i]][, j]), deviance(model)))
   }

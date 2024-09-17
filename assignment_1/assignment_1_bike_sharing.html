@@ -2606,7 +2606,7 @@ null.model &lt;- lm(y ~ 1, data = as.data.frame(X))</code></pre>
 <div id="forward-selection" class="section level3">
 <h3>4.2.2. Forward Selection</h3>
 <ul>
-<li>Start with the null model (only intercept)</li>
+<li>Starting with the null model (only intercept)</li>
 <li>Adding variables based on significance</li>
 </ul>
 <pre class="r"><code>model.forward.aic &lt;- stepAIC(object = null.model, scope = full.model$terms, direction = &#39;forward&#39;)</code></pre>
@@ -2677,12 +2677,9 @@ null.model &lt;- lm(y ~ 1)
 result.AIC &lt;- extractAIC(null.model)
 result.RSS &lt;- cbind(1, deviance(null.model))
 
-for (i in 1:num_vars) {  # For each number of variables
-  for (j in 1:ncol(allCombinations[[i]])) {  # For each subset of size &#39;i&#39;
-    # Fit model using current subset of variables
+for (i in 1:num_vars) {
+  for (j in 1:ncol(allCombinations[[i]])) {
     model &lt;- lm(y ~ ., data = as.data.frame(X[, allCombinations[[i]][, j]]))
-    
-    # Store AIC and RSS for this model
     result.AIC &lt;- rbind(result.AIC, extractAIC(model))
     result.RSS &lt;- rbind(result.RSS, cbind(length(allCombinations[[i]][, j]), deviance(model)))
   }
