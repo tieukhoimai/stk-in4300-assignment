@@ -1,5 +1,5 @@
 ---
-title: "Bike Sharing"
+title: "Assignment 1: Bike Sharing"
 date: "2024-09-16"
 output:
   pdf_document: default
@@ -7,7 +7,7 @@ output:
     df_print: paged
 ---
 
-```{r setup, include=FALSE}
+```{r setup, results='hide'}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(ggplot2)
@@ -23,10 +23,10 @@ For this assignment, I chose the [Bike Sharing dataset](https://archive.ics.uci.
 # Download the dataset
 download.file('https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip',
               'bike-sharing.zip')
-unzip('bike-sharing.zip', files = 'hour.csv')
+unzip('bike-sharing.zip', files = 'day.csv')
 
 # Load the dataset
-df <- read.csv('hour.csv', header = TRUE)
+df <- read.csv('day.csv', header = TRUE)
 
 # Remove zip and csv files
 file.remove(list.files(pattern = "\\.zip$|\\.csv$"))
@@ -34,38 +34,37 @@ file.remove(list.files(pattern = "\\.zip$|\\.csv$"))
 
 # Problem 1. Summary Statistics Table
 
-```{r eval=TRUE, echo=FALSE, results='asis'}
+```{r eval=TRUE, results='asis'}
 st(df)
 ```
 
-The dataset contains 17 columns and 17379 obs. Below are a brief overview of the columns
+The dataset contains 16 columns and 731 obs. Below are a brief overview of the columns
 
-| Variable    | Role     | Type        | Description                                                                                |
-|-------------|----------|-------------|--------------------------------------------------------------------------------------------|
-| instant     | Feature  | Integer     | Record index                                                                               |
-| dteday      | Feature  | Date        | Date of the record                                                                         |
-| season      | Feature  | Categorical | Season (1 = Spring, 2 = Summer, 3 = Fall, 4 = Winter)                                      |
-| yr          | Feature  | Categorical | Year (0 = 2011, 1 = 2012)                                                                  |
-| mnth        | Feature  | Categorical | Month (1 to 12)                                                                            |
-| hr          | Feature  | Categorical | Hour of the day (0 to 23)                                                                  |
-| holiday     | Feature  | Categorical | Whether the day is a holiday (1 = Yes, 0 = No)                                             |
-| weekday     | Feature  | Categorical | Day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)                                |
-| workingday  | Feature  | Categorical | Whether the day is a working day (1 = Yes, 0 = No)                                         |
-| weathersit  | Feature  | Categorical | Weather situation (1 = Clear, 2 = Mist, 3 = Light Snow/Rain, 4 = Heavy Rain/Snow)          |
-| temp        | Feature  | Continuous  | Normalized temperature in Celsius (values divided by 41)                                   |
-| atemp       | Feature  | Continuous  | Normalized feeling temperature in Celsius (values divided by 50)                           |
-| hum         | Feature  | Continuous  | Normalized humidity (values divided by 100)                                                |
-| windspeed   | Feature  | Continuous  | Normalized wind speed (values divided by 67)                                               |
-| casual      | Other    | Integer     | Count of casual (unregistered) users                                                       |
-| registered  | Other    | Integer     | Count of registered users                                                                  |
-| cnt         | Target   | Integer     | Total count of bike rentals, including both casual and registered users                    |
+| Variable   | Role    | Type        | Description                                                                       |
+|--------------|--------------|--------------|-----------------------------|
+| instant    | Feature | Integer     | Record index                                                                      |
+| dteday     | Feature | Date        | Date of the record                                                                |
+| season     | Feature | Categorical | Season (1 = Spring, 2 = Summer, 3 = Fall, 4 = Winter)                             |
+| yr         | Feature | Categorical | Year (0 = 2011, 1 = 2012)                                                         |
+| mnth       | Feature | Categorical | Month (1 to 12)                                                                   |
+| holiday    | Feature | Categorical | Whether the day is a holiday (1 = Yes, 0 = No)                                    |
+| weekday    | Feature | Categorical | Day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)                       |
+| workingday | Feature | Categorical | Whether the day is a working day (1 = Yes, 0 = No)                                |
+| weathersit | Feature | Categorical | Weather situation (1 = Clear, 2 = Mist, 3 = Light Snow/Rain, 4 = Heavy Rain/Snow) |
+| temp       | Feature | Continuous  | Normalized temperature in Celsius (values divided by 41)                          |
+| atemp      | Feature | Continuous  | Normalized feeling temperature in Celsius (values divided by 50)                  |
+| hum        | Feature | Continuous  | Normalized humidity (values divided by 100)                                       |
+| windspeed  | Feature | Continuous  | Normalized wind speed (values divided by 67)                                      |
+| casual     | Other   | Integer     | Count of casual (unregistered) users                                              |
+| registered | Other   | Integer     | Count of registered users                                                         |
+| cnt        | Target  | Integer     | Total count of bike rentals, including both casual and registered users           |
 
 This dataset is suitable for both classification and regression tasks. Key questions it can help address include:
 
-  - How can bike-sharing systems be optimized by identifying peak usage periods?
-  - How can planners prepare for special events or holidays?
-  - How does the weather impact bike rentals?
-  
+-   How can bike-sharing systems be optimized by identifying peak usage periods?
+-   How can planners prepare for special events or holidays?
+-   How does the weather impact bike rentals?
+
 # Problem 2. Bad Data Visualization
 
 ## 2.1. Categorical Variable (season)
@@ -79,7 +78,7 @@ ggplot(df, aes(x = factor(1), fill = factor(season))) +
   labs(title = "Pie Chart of Total Bike Rentals by Season", fill = "Season")
 ```
 
-## 2.2. Continous Variable (temp)
+## 2.2. Continuous Variable (temp)
 
 In below example, Line chart of Total Bike Rentals by Temperature gives the false impression of a sequential or time-based relationship and it can not show a clear trend, so this visualization offers little meaningful insight into how bike rentals respond to temperature changes.
 
@@ -106,7 +105,7 @@ ggplot(df, aes(x = factor(season), y = cnt, fill = factor(season))) +
        fill = "Season")
 ```
 
-## 3.2. Continous Variable {#3-2}
+## 3.2. Continuous Variable {#3-2}
 
 The scatter plot is better suited for continuous data like temperature and rentals. It shows the spread and density of the data points without implying a sequential connection. On the other hand, adding a smoothing line (LOESS) or trend line gives a clear indication of the relationship between temperature and total bike rentals, helping to highlight any trends in the data.
 
@@ -121,4 +120,145 @@ ggplot(data = df, aes(x = temp, y = cnt)) +
 
 # Problem 4. Simple analysis
 
-TBD
+```{r}
+y <- df$cnt
+X <- df[, c('season', 'mnth', 'holiday', 'weekday', 'workingday', 
+              'weathersit', 'temp', 'atemp', 'hum', 'windspeed')]
+```
+
+```{r}
+cor(X)
+```
+
+## 4.1. Linear regression model with all available variables
+
+```{r}
+full.model <- lm(y ~ ., data = X)
+summary(full.model)
+```
+
+## 4.2. Model Selection Process
+
+Initial full and null model
+
+```{r}
+library(MASS)
+
+full.model <- lm(y ~ ., data = as.data.frame(X))
+null.model <- lm(y ~ 1, data = as.data.frame(X))
+```
+
+### 4.2.1. Backward Elimination
+
+-   Starting with the full model
+-   Removing non-significant variables step by step
+
+```{r results='hide'}
+model.backward.aic <- stepAIC(object = full.model, scope = null.model, direction = 'backward')
+```
+
+```{r}
+summary(model.backward.aic)
+```
+
+### 4.2.2. Forward Selection
+
+-   Start with the null model (only intercept)
+-   Adding variables based on significance
+
+```{r results='hide'}
+model.forward.aic <- stepAIC(object = null.model, scope = full.model$terms, direction = 'forward')
+```
+
+```{r}
+summary(model.forward.aic)
+```
+
+### 4.2.3. Stepwise Selection
+
+```{r results='hide'}
+model.stepwise.aic <- stepAIC(object = null.model, scope = full.model$terms, direction = 'both')
+```
+
+```{r}
+summary(model.stepwise.aic)
+```
+
+### 4.2.4. Best Subset Model
+
+```{r}
+num_vars <- ncol(X) 
+
+allCombinations <- sapply(1:num_vars, function(m) combn(x = 1:num_vars, m = m))
+
+null.model <- lm(y ~ 1)
+result.AIC <- extractAIC(null.model)
+result.RSS <- cbind(1, deviance(null.model))
+
+for (i in 1:num_vars) {  # For each number of variables
+  for (j in 1:ncol(allCombinations[[i]])) {  # For each subset of size 'i'
+    # Fit model using current subset of variables
+    model <- lm(y ~ ., data = as.data.frame(X[, allCombinations[[i]][, j]]))
+    
+    # Store AIC and RSS for this model
+    result.AIC <- rbind(result.AIC, extractAIC(model))
+    result.RSS <- rbind(result.RSS, cbind(length(allCombinations[[i]][, j]), deviance(model)))
+  }
+}
+
+# Plot RSS for all subset sizes
+plot(result.RSS[, 1], result.RSS[, 2], main = 'Residual Sum of Squares for Subsets', 
+     xlab = 'Subset size', ylab = 'Residual Sum of Squares (RSS)')
+```
+
+```{r}
+# identify the model with the smallest RSS
+best.RSS <- result.RSS[which.min(result.RSS[, 2]), ]
+index <- which.min(result.RSS[result.RSS[, 1] == best.RSS[1], 2])
+variables.best.model <- allCombinations[[best.RSS[1]]][, index]
+
+# final model
+model.bestSubset.RSS <- lm(y ~ ., data = as.data.frame(X[, variables.best.model]))
+summary(model.bestSubset.RSS)
+```
+
+## 4.3. Model Performance Comparison
+
+```{r results='hide'}
+full.model <- lm(y ~ ., data = as.data.frame(X))
+null.model <- lm(y ~ 1, data = as.data.frame(X))
+
+# Forward Selection
+scp <- full.model$terms
+
+rss1 <- vector("numeric", num_vars)
+for (j in 1:num_vars) {
+  mdl <- stepAIC(object = null.model, scope = scp, direction =
+                   'forward', k = 0, steps = j)
+  rss1[j] <- sum((mdl$fitted.values-y)^2)
+}
+
+# Backward Elimination
+rss2 <- vector("numeric", num_vars)
+for (j in 1:num_vars) {
+  mdl <- stepAIC(object = full.model, scope = list(lower = null.model, upper = full.model), 
+                 direction = 'backward', k = 1e6, steps = j-1)
+  rss2[j] <- sum((mdl$fitted.values - y)^2)
+}
+rss2 <- rev(rss2)
+
+# Best Subset Selection
+rss3 <- vector("numeric", num_vars)
+for (j in 1:num_vars) {
+  rss3[j] <- min(result.RSS[result.RSS[, 1] == j, 2])
+}
+```
+
+```{r}
+plot(0, 0, xlim = c(1, num_vars), ylim = c(min(rss1, rss2, rss3), max(rss1, rss2, rss3)), 
+     type = "n", xlab = "Number of Variables", ylab = "Residual Sum of Squares (RSS)")
+lines(1:num_vars, rss1, col = "red", type = 'p', pch = 16, lty = 1)  # Forward
+lines(1:num_vars, rss2, col = "green", type = 'p', pch = 16, lty = 2)  # Backward
+lines(1:num_vars, rss3, col = "blue", type = 'p', pch = 16, lty = 3)  #Should be the minimum given that we are exploring all possible combinations
+legend("topright", legend = c("Forward", "Backward", "Best Subset"), col = c("red", "green", "blue"), pch = 16)
+```
