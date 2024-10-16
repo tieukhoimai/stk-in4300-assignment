@@ -7,7 +7,7 @@ output:
   pdf_document: default
 ---
 
-```{r setup, results='hide'}
+```{r setup, results='hide', include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(ggplot2)
@@ -21,8 +21,7 @@ For this assignment, I chose the [Bike Sharing dataset](https://archive.ics.uci.
 ```{r, results='hide'}
 
 # Download the dataset
-download.file('https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip',
-              'bike-sharing.zip')
+download.file('https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip','bike-sharing.zip')
 unzip('bike-sharing.zip', files = 'day.csv')
 
 # Load the dataset
@@ -32,11 +31,6 @@ df <- read.csv('day.csv', header = TRUE)
 file.remove(list.files(pattern = "\\.zip$|\\.csv$"))
 ```
 
-# Problem 1. Summary Statistics Table
-
-```{r eval=TRUE, results='asis'}
-st(df)
-```
 
 The dataset contains 16 columns and 731 obs. Below are a brief overview of the columns
 
@@ -65,11 +59,17 @@ This dataset is suitable for both classification and regression tasks. Key quest
 -   How can planners prepare for special events or holidays?
 -   How does the weather impact bike rentals?
 
+# Problem 1. Summary Statistics Table
+
+```{r}
+st(df)
+```
+
+Refer the result in **Table 2: Summary Statistics**
+
 # Problem 2. Bad Data Visualization
 
 ## 2.1. Categorical Variable (season)
-
-If we make a Pie Chart of Total Bike Rentals by Season (category variable), it becomes difficult to compare exact differences between the seasons by comparing angles, which is harder for the human eye than comparing lengths (as in bar charts). In contrast, a bar chart would clearly show the differences by the heights of the bars, refer [3.1](#3-1)
 
 ```{r}
 ggplot(df, aes(x = factor(1), fill = factor(season))) +
@@ -78,9 +78,9 @@ ggplot(df, aes(x = factor(1), fill = factor(season))) +
   labs(title = "Pie Chart of Total Bike Rentals by Season", fill = "Season")
 ```
 
-## 2.2. Continuous Variable (temp)
+If we make a Pie Chart of Total Bike Rentals by Season (category variable), it becomes difficult to compare exact differences between the seasons by comparing angles, which is harder for the human eye than comparing lengths (as in bar charts). In contrast, a bar chart would clearly show the differences by the heights of the bars, refer [3.1](#3-1)
 
-In below example, Line chart of Total Bike Rentals by Temperature gives the false impression of a sequential or time-based relationship and it can not show a clear trend, so this visualization offers little meaningful insight into how bike rentals respond to temperature changes.
+## 2.2. Continuous Variable (temp)
 
 ```{r}
 ggplot(df, aes(x = temp, y = cnt)) +
@@ -89,6 +89,8 @@ ggplot(df, aes(x = temp, y = cnt)) +
        x = "Temperature (Normalized)",
        y = "Total Bike Rentals")
 ```
+
+In above example - line chart of Total Bike Rentals by Temperature - giving the false impression of a sequential or time-based relationship and it can not show a clear trend, so this visualization offers little meaningful insight into how bike rentals respond to temperature changes.
 
 # Problem 3. Good Data Visualization
 
@@ -129,7 +131,6 @@ X <- df[, c('season', 'mnth', 'holiday', 'weekday', 'workingday',
 ```{r}
 cor(X)
 ```
-
 
 ## 4.1. Linear regression model with all available variables
 
