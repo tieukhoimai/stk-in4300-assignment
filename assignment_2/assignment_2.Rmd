@@ -1,0 +1,103 @@
+---
+title: "assignment_2"
+output: pdf_document
+date: "2024-10-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(caTools)
+library(ggplot2)
+```
+
+# Problem 1. Regression
+
+```{r}
+data <- read.csv("qsar_aquatic_toxicity.csv", sep = ";", header = FALSE)
+names(data) <- c(
+    "TPSA",
+    "SAacc",
+    "H050",
+    "MLOGP",
+    "RDCHI",
+    "GATS1p",
+    "nN",
+    "C040",
+    "LC50"
+)
+
+head(data)
+```
+
+## a. Split the data into a training and test set
+
+```{r}
+# Use 70% of dataset as training set and remaining 30% as testing set
+sample <- sample.split(data$LC50, SplitRatio = 0.7)
+train  <- subset(data, sample == TRUE)
+test   <- subset(data, sample == FALSE)
+```
+
+```{r}
+dim(train)
+dim(test)
+```
+
+```{r}
+# Fit linear regression model on training data
+model <- lm(LC50 ~ ., data=train)
+
+summary(model)
+```
+
+```{r}
+# Predict on training and test datasets
+pred_train <- predict(model, newdata=train)
+pred_test <- predict(model, newdata=test)
+```
+
+```{r}
+# Adding predictions columns to the datasets
+train$predicted_LC50 <- pred_train
+test$predicted_LC50 <- pred_test
+```
+
+```{r}
+# Evaluate model: calculate MSE, RMSE, and R-squared for training and test sets
+mse_train <- mean((train$LC50 - train$predicted_LC50)^2)
+rmse_train <- sqrt(mse_train)
+r2_train <- 1 - (sum((train$LC50 - train$predicted_LC50)^2) / sum((train$LC50 - mean(train$LC50))^2))
+
+mse_test <- mean((test$LC50 - test$predicted_LC50)^2)
+rmse_test <- sqrt(mse_test)
+r2_test <- 1 - (sum((test$LC50 - test$predicted_LC50)^2) / sum((test$LC50 - mean(test$LC50))^2))
+
+# Print evaluation metrics
+cat("Training Metrics:\n")
+cat("MSE (Train): ", mse_train, "\n")
+cat("RMSE (Train): ", rmse_train, "\n")
+cat("R-squared (Train): ", r2_train, "\n\n")
+
+cat("Test Metrics:\n")
+cat("MSE (Test): ", mse_test, "\n")
+cat("RMSE (Test): ", rmse_test, "\n")
+cat("R-squared (Test): ", r2_test, "\n")
+```
+
+```{r}
+# Combine data for plotting
+train$Dataset <- 'Train'
+test$Dataset <- 'Test'
+plot_data <- rbind(train, test)
+
+# Plot observed vs predicted LC50 values
+ggplot(plot_data, aes(x = LC50, y = predicted_LC50, color = Dataset)) +
+  geom_point(alpha = 0.7) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  labs(title = "Observed vs Predicted LC50", x = "Observed LC50", y = "Predicted LC50") +
+  theme_minimal() +
+  facet_wrap(~Dataset)
+```
