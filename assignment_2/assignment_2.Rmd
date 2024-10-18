@@ -1,7 +1,11 @@
 ---
 title: "assignment_2"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 date: "2024-10-16"
+editor_options:
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -41,9 +45,9 @@ train  <- subset(data, sample == TRUE)
 test   <- subset(data, sample == FALSE)
 ```
 
+
 ```{r}
-dim(train)
-dim(test)
+cat("Dimension of Training Set:", paste(dim(train), collapse = "x"), "\nDimension of Test Set:", paste(dim(test), collapse = "x"), "\n")
 ```
 
 ```{r}
@@ -74,18 +78,22 @@ r2_train <- 1 - (sum((train$LC50 - train$predicted_LC50)^2) / sum((train$LC50 - 
 mse_test <- mean((test$LC50 - test$predicted_LC50)^2)
 rmse_test <- sqrt(mse_test)
 r2_test <- 1 - (sum((test$LC50 - test$predicted_LC50)^2) / sum((test$LC50 - mean(test$LC50))^2))
-
-# Print evaluation metrics
-cat("Training Metrics:\n")
-cat("MSE (Train): ", mse_train, "\n")
-cat("RMSE (Train): ", rmse_train, "\n")
-cat("R-squared (Train): ", r2_train, "\n\n")
-
-cat("Test Metrics:\n")
-cat("MSE (Test): ", mse_test, "\n")
-cat("RMSE (Test): ", rmse_test, "\n")
-cat("R-squared (Test): ", r2_test, "\n")
 ```
+
+```{r}
+cat(paste0(
+  "Training Metrics:\n",
+  "MSE (Train): ", mse_train, "\n",
+  "RMSE (Train): ", rmse_train, "\n",
+  "R-squared (Train): ", r2_train, "\n\n",
+  
+  "Test Metrics:\n",
+  "MSE (Test): ", mse_test, "\n",
+  "RMSE (Test): ", rmse_test, "\n",
+  "R-squared (Test): ", r2_test, "\n"
+))
+```
+
 
 ```{r}
 # Combine data for plotting
@@ -101,3 +109,5 @@ ggplot(plot_data, aes(x = LC50, y = predicted_LC50, color = Dataset)) +
   theme_minimal() +
   facet_wrap(~Dataset)
 ```
+
+## a. Split the data into a training and test set
