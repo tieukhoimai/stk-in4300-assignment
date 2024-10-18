@@ -1,11 +1,11 @@
 ---
 title: "assignment_2"
 output:
+  html_document:
+    df_print: paged
   pdf_document: 
     toc: true
     toc_depth: 3
-  html_document:
-    df_print: paged
 date: "2024-10-16"
 editor_options:
   chunk_output_type: inline
@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(caTools)
 library(ggplot2)
 library(gridExtra)
+library(MASS)
 ```
 
 # Problem 1. Regression
@@ -45,6 +46,7 @@ Split the data into a training and a test set, with approximately 2/3 and 1/3 of
 
 ```{r}
 # Use 70% of dataset as training set and remaining 30% as testing set
+set.seed(1)
 sample <- sample.split(data$LC50, SplitRatio = 0.7)
 train  <- subset(data, sample == TRUE)
 test   <- subset(data, sample == FALSE)
@@ -400,5 +402,109 @@ ggplot(errors_df, aes(x = Metric, y = Error, fill = Model)) +
   theme(legend.position = "top")
 ```
 
+## c. Variable selection procedures
 
+(at least backward elimination and forward selection) with different stopping criteria (at least AIC and BIC) and compare the results. Do you obtain the same model?
+
+```{r}
+# Split the data into training (70%) and test (30%) sets
+set.seed(1)
+sample <- sample.split(data$LC50, SplitRatio = 0.7)
+train <- subset(data, sample == TRUE)
+test <- subset(data, sample == FALSE)
+
+# Set up full and null model
+full.model <- lm(LC50 ~ ., data = train)
+null.model <- lm(LC50 ~ 1, data = train)
+
+# Set up target and number of variables
+y <- train$LC50
+num_vars <- ncol(train) - 1  # exclude the response variable column
+```
+
+
+### Forward Selection
+
+```{r}
+# With AIC
+model.forward.aic <- stepAIC(null.model, scope = list(lower = null.model, upper = full.model), direction = 'forward', trace = FALSE)
+summary(model.forward.aic)
+
+# With BIC
+# If we set it to k = log(n), the function considers the BIC.
+
+model.forward.bic <- stepAIC(null.model, scope = list(lower = null.model, upper = full.model), direction = 'forward', k = log(nrow(train)), trace = FALSE)
+summary(model.forward.bic)
+```
+
+### Backward Elimination
+
+```{r}
+# With AIC
+model.backward.aic <- stepAIC(full.model, direction = 'backward', trace = FALSE)
+summary(model.backward.aic)
+
+# With BIC
+model.backward.bic <- stepAIC(full.model, direction = 'backward', k = log(nrow(train)), trace = FALSE)
+summary(model.backward.bic)
+```
+
+## Stepwise Selection
+
+```{r}
+# With AIC
+model.stepwise.aic <- stepAIC(null.model, scope = list(lower = null.model, upper = full.model), direction = 'both', trace = FALSE)
+summary(model.stepwise.aic)
+
+# With BIC
+model.stepwise.bic <- stepAIC(null.model, scope = list(lower = null.model, upper = full.model), direction = 'both', k = log(nrow(train)), trace = FALSE)
+summary(model.stepwise.bic)
+```
+
+
+### Model Comparison
+
+```{r}
+# Predict on the test set using all models
+test$pred_backward_aic <- predict(model.backward.aic, newdata = test)
+test$pred_forward_aic <- predict(model.forward.aic, newdata = test)
+test$pred_stepwise_aic <- predict(model.stepwise.aic, newdata = test)
+test$pred_backward_bic <- predict(model.backward.bic, newdata = test)
+test$pred_forward_bic <- predict(model.forward.bic, newdata = test)
+test$pred_stepwise_bic <- predict(model.stepwise.bic, newdata = test)
+
+# Calculate MSE, RMSE, and R-squared for each model
+mse <- function(actual, predicted) mean((actual - predicted)^2)
+rmse <- function(actual, predicted) sqrt(mse(actual, predicted))
+r2 <- function(actual, predicted) 1 - (sum((actual - predicted)^2) / sum((actual - mean(actual))^2))
+
+metrics <- data.frame(
+  Model = c("Backward AIC", "Forward AIC", "Stepwise AIC", "Backward BIC", "Forward BIC", "Stepwise BIC"),
+  MSE = c(
+    mse(test$LC50, test$pred_backward_aic),
+    mse(test$LC50, test$pred_forward_aic),
+    mse(test$LC50, test$pred_stepwise_aic),
+    mse(test$LC50, test$pred_backward_bic),
+    mse(test$LC50, test$pred_forward_bic),
+    mse(test$LC50, test$pred_stepwise_bic)
+  ),
+  RMSE = c(
+    rmse(test$LC50, test$pred_backward_aic),
+    rmse(test$LC50, test$pred_forward_aic),
+    rmse(test$LC50, test$pred_stepwise_aic),
+    rmse(test$LC50, test$pred_backward_bic),
+    rmse(test$LC50, test$pred_forward_bic),
+    rmse(test$LC50, test$pred_stepwise_bic)
+  ),
+  R2 = c(
+    r2(test$LC50, test$pred_backward_aic),
+    r2(test$LC50, test$pred_forward_aic),
+    r2(test$LC50, test$pred_stepwise_aic),
+    r2(test$LC50, test$pred_backward_bic),
+    r2(test$LC50, test$pred_forward_bic),
+    r2(test$LC50, test$pred_stepwise_bic)
+  )
+)
+print(metrics)
+```
 
