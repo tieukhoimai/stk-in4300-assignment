@@ -1,6 +1,7 @@
 ---
 title: "assignment_2"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 date: "2024-10-16"
@@ -15,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(caTools)
 library(ggplot2)
+library(gridExtra)
 ```
 
 # Problem 1. Regression
@@ -36,7 +38,7 @@ names(data) <- c(
 head(data)
 ```
 
-## a. Split the data into a training and test set
+## a. Split the data into a training and a test set, with approximately 2/3 and 1/3 of the observations, respectively.
 
 ```{r}
 # Use 70% of dataset as training set and remaining 30% as testing set
@@ -45,39 +47,46 @@ train  <- subset(data, sample == TRUE)
 test   <- subset(data, sample == FALSE)
 ```
 
-
 ```{r}
 cat("Dimension of Training Set:", paste(dim(train), collapse = "x"), "\nDimension of Test Set:", paste(dim(test), collapse = "x"), "\n")
 ```
 
+### (i) Model each of them directly as a linear effect
+
+```{r}
+train_i = train
+test_i = test
+```
+
+
 ```{r}
 # Fit linear regression model on training data
-model <- lm(LC50 ~ ., data=train)
+model <- lm(LC50 ~ ., data=train_i)
 
 summary(model)
 ```
 
 ```{r}
 # Predict on training and test datasets
-pred_train <- predict(model, newdata=train)
-pred_test <- predict(model, newdata=test)
+pred_train <- predict(model, newdata=train_i)
+pred_test <- predict(model, newdata=test_i)
 ```
 
 ```{r}
 # Adding predictions columns to the datasets
-train$predicted_LC50 <- pred_train
-test$predicted_LC50 <- pred_test
+train_i$predicted_LC50 <- pred_train
+test_i$predicted_LC50 <- pred_test
 ```
 
 ```{r}
 # Evaluate model: calculate MSE, RMSE, and R-squared for training and test sets
-mse_train <- mean((train$LC50 - train$predicted_LC50)^2)
+mse_train <- mean((train_i$LC50 - train_i$predicted_LC50)^2)
 rmse_train <- sqrt(mse_train)
-r2_train <- 1 - (sum((train$LC50 - train$predicted_LC50)^2) / sum((train$LC50 - mean(train$LC50))^2))
+r2_train <- 1 - (sum((train_i$LC50 - train_i$predicted_LC50)^2) / sum((train_i$LC50 - mean(train_i$LC50))^2))
 
-mse_test <- mean((test$LC50 - test$predicted_LC50)^2)
+mse_test <- mean((test_i$LC50 - test_i$predicted_LC50)^2)
 rmse_test <- sqrt(mse_test)
-r2_test <- 1 - (sum((test$LC50 - test$predicted_LC50)^2) / sum((test$LC50 - mean(test$LC50))^2))
+r2_test <- 1 - (sum((test_i$LC50 - test_i$predicted_LC50)^2) / sum((test_i$LC50 - mean(test_i$LC50))^2))
 ```
 
 ```{r}
@@ -94,20 +103,281 @@ cat(paste0(
 ))
 ```
 
-
 ```{r}
 # Combine data for plotting
-train$Dataset <- 'Train'
-test$Dataset <- 'Test'
-plot_data <- rbind(train, test)
+train_i$Type <- 'Train'
+test_i$Type <- 'Test'
+combined_data <- rbind(train_i, test_i)
 
-# Plot observed vs predicted LC50 values
-ggplot(plot_data, aes(x = LC50, y = predicted_LC50, color = Dataset)) +
+combined_data$Type <- factor(combined_data$Type, levels = c('Train', 'Test'))
+
+# Plotting observed vs predicted LC50 values
+ggplot(combined_data, aes(x = LC50, y = predicted_LC50, color = Type)) +
   geom_point(alpha = 0.7) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   labs(title = "Observed vs Predicted LC50", x = "Observed LC50", y = "Predicted LC50") +
   theme_minimal() +
-  facet_wrap(~Dataset)
+  facet_wrap(~Type) +
+  theme(legend.position = "bottom")
 ```
 
-## a. Split the data into a training and test set
+### (ii). Transform each of them using a 0/1 dummy encoding where 0 represents absence of the specific atom and 1 represents presence of the specific atoms.
+
+```{r}
+# To make sure we use the same split in (i)
+train_ii = train
+test_ii = test
+```
+
+```{r}
+# Transform 3 count variable (H050, nN, C040) into 0/1 in train and test datasets
+
+train_ii$H050 <- ifelse(train_ii$H050 > 0, 1, 0)
+train_ii$nN <- ifelse(train_ii$nN > 0, 1, 0)
+train_ii$C040 <- ifelse(train_ii$C040 > 0, 1, 0)
+
+test_ii$H050 <- ifelse(test_ii$H050 > 0, 1, 0)
+test_ii$nN <- ifelse(test_ii$nN > 0, 1, 0)
+test_ii$C040 <- ifelse(test_ii$C040 > 0, 1, 0)
+```
+
+
+```{r}
+head(train_ii)
+```
+
+```{r}
+# Fit linear regression model on transformed training data
+model_transform_dummy <- lm(LC50 ~ ., data = train_ii)
+
+summary(model_transform_dummy)
+```
+
+```{r}
+# Predict on training and test datasets
+pred_train_transform_dummy <- predict(model, newdata=train_ii)
+pred_test_transform_dummy <- predict(model, newdata=test_ii)
+```
+
+```{r}
+# Adding predictions columns to the datasets
+train_ii$predicted_LC50 <- pred_train_transform_dummy
+test_ii$predicted_LC50 <- pred_test_transform_dummy
+```
+
+```{r}
+# Evaluate model: calculate MSE, RMSE, and R-squared for training and test sets
+mse_train_transform_dummy <- mean((train_ii$LC50 - train_ii$predicted_LC50)^2)
+rmse_train_transform_dummy <- sqrt(mse_train_transform_dummy)
+r2_train_transform_dummy <- 1 - (sum((train_ii$LC50 - train_ii$predicted_LC50)^2) / sum((train_ii$LC50 - mean(train_ii$LC50))^2))
+
+mse_test_transform_dummy <- mean((test_ii$LC50 - test_ii$predicted_LC50)^2)
+rmse_test_transform_dummy <- sqrt(mse_test_transform_dummy)
+r2_test_transform_dummy <- 1 - (sum((test_ii$LC50 - test_ii$predicted_LC50)^2) / sum((test_ii$LC50 - mean(test_ii$LC50))^2))
+```
+
+```{r}
+cat(paste0(
+  "Training Metrics:\n",
+  "MSE (Train): ", mse_train_transform_dummy, "\n",
+  "RMSE (Train): ", rmse_train_transform_dummy, "\n",
+  "R-squared (Train): ", r2_train_transform_dummy, "\n\n",
+  
+  "Test Metrics:\n",
+  "MSE (Test): ", mse_test_transform_dummy, "\n",
+  "RMSE (Test): ", rmse_test_transform_dummy, "\n",
+  "R-squared (Test): ", r2_test_transform_dummy, "\n"
+))
+```
+
+```{r}
+# Combine data for plotting
+train_ii$Type <- 'Train'
+test_ii$Type <- 'Test'
+combined_data <- rbind(train_ii, test_ii)
+
+combined_data$Type <- factor(combined_data$Type, levels = c('Train', 'Test'))
+
+# Plotting observed vs predicted LC50 values
+ggplot(combined_data, aes(x = LC50, y = predicted_LC50, color = Type)) +
+  geom_point(alpha = 0.7) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  labs(title = "Dummy Encoding: Observed vs Predicted LC50", x = "Observed LC50", y = "Predicted LC50") +
+  theme_minimal() +
+  facet_wrap(~Type) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+# Prepare combined data
+train_combined <- train_i[, c("LC50", "predicted_LC50")]
+train_combined$Method <- 'Original'
+train_combined$Type <- 'Train'
+train_ii_combined <- train_ii[, c("LC50", "predicted_LC50")]
+train_ii_combined$Method <- 'Dummy'
+train_ii_combined$Type <- 'Train'
+train_combined_all <- rbind(train_combined, train_ii_combined)
+
+test_combined <- test_i[, c("LC50", "predicted_LC50")]
+test_combined$Method <- 'Original'
+test_combined$Type <- 'Test'
+test_ii_combined <- test_ii[, c("LC50", "predicted_LC50")]
+test_ii_combined$Method <- 'Dummy'
+test_ii_combined$Type <- 'Test'
+test_combined_all <- rbind(test_combined, test_ii_combined)
+
+# Convert 'Method' and 'Type' to factors
+train_combined_all$Method <- factor(train_combined_all$Method, levels = c('Original', 'Dummy'))
+test_combined_all$Method <- factor(test_combined_all$Method, levels = c('Original', 'Dummy'))
+
+# Function to draw regression lines
+add_regression_lines <- function(df, original_model, dummy_model) {
+  ggplot(df, aes(x = LC50, y = predicted_LC50, color = Method)) +
+    geom_point(alpha = 0.7) +
+    geom_smooth(method = "lm", formula = y ~ x, se = FALSE, 
+                aes(linetype = Method), 
+                data = df[df$Method == 'Original', ], 
+                color = 'blue') +
+    geom_smooth(method = "lm", formula = y ~ x, se = FALSE, 
+                aes(linetype = Method), 
+                data = df[df$Method == 'Dummy', ], 
+                color = 'red') +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+    labs(x = "Observed LC50", y = "Predicted LC50", title = df$Type[1]) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+# Plot training data with both regression lines
+train_plot <- add_regression_lines(train_combined_all, model, model_transform_dummy)
+train_plot <- train_plot + labs(title = "Training Data")
+
+# Plot testing data with both regression lines
+test_plot <- add_regression_lines(test_combined_all, model, model_transform_dummy)
+test_plot <- test_plot + labs(title = "Testing Data")
+
+# Display plots side by side
+grid.arrange(train_plot, test_plot, ncol = 2)
+```
+
+## b. Repeat the procedure described in (a) 200 times, such that each time: you do a new training/test split (with same proportions as in (a)), fit the models with option (i) and (ii), and record the test errors. Make a plot that illustrates the empirical distributions of the test error for each modelling option and compare the average test error. What is the point of repeating the experiment in this way before drawing any conclusions? Try to explain why one often obtains, like in this case, a worse result by using option (ii).
+
+```{r}
+# Initialize vectors to store test errors
+mse_test_errors_i <- numeric(200)
+rmse_test_errors_i <- numeric(200)
+r2_test_errors_i <- numeric(200)
+mse_test_errors_ii <- numeric(200)
+rmse_test_errors_ii <- numeric(200)
+r2_test_errors_ii <- numeric(200)
+
+# Repeat the procedure 200 times
+set.seed(2)
+for (i in 1:200) {
+  # Split the data
+  sample <- sample.split(data$LC50, SplitRatio = 0.7)
+  train <- subset(data, sample == TRUE)
+  test <- subset(data, sample == FALSE)
+  
+  # Option (i): Original model
+  model <- lm(LC50 ~ ., data=train)
+  pred_test_i <- predict(model, newdata=test)
+  mse_test_i <- mean((test$LC50 - pred_test_i)^2)
+  rmse_test_i <- sqrt(mse_test_i)
+  r2_test_i <- 1 - (sum((test$LC50 - pred_test_i)^2) / sum((test$LC50 - mean(test$LC50))^2))
+  
+  # Option (ii): Dummy encoding
+  train$H050 <- ifelse(train$H050 > 0, 1, 0)
+  train$nN <- ifelse(train$nN > 0, 1, 0)
+  train$C040 <- ifelse(train$C040 > 0, 1, 0)
+  
+  test$H050 <- ifelse(test$H050 > 0, 1, 0)
+  test$nN <- ifelse(test$nN > 0, 1, 0)
+  test$C040 <- ifelse(test$C040 > 0, 1, 0)
+  
+  model_ii <- lm(LC50 ~ ., data = train)
+  pred_test_ii <- predict(model_ii, newdata = test)
+  mse_test_ii <- mean((test$LC50 - pred_test_ii)^2)
+  rmse_test_ii <- sqrt(mse_test_ii)
+  r2_test_ii <- 1 - (sum((test$LC50 - pred_test_ii)^2) / sum((test$LC50 - mean(test$LC50))^2))
+  
+  # Record the test errors
+  mse_test_errors_i[i] <- mse_test_i
+  rmse_test_errors_i[i] <- rmse_test_i
+  r2_test_errors_i[i] <- r2_test_i
+  
+  mse_test_errors_ii[i] <- mse_test_ii
+  rmse_test_errors_ii[i] <- rmse_test_ii
+  r2_test_errors_ii[i] <- r2_test_ii
+}
+```
+
+- Method 1: performs better in term of MSE
+- Method 2: better in reduce overfitting
+
+
+```{r}
+# Calculate and print average test errors
+average_test_error_i <- mean(mse_test_errors_i)
+average_rmse_error_i <- mean(rmse_test_errors_i)
+average_r2_error_i <- mean(r2_test_errors_i)
+
+average_test_error_ii <- mean(mse_test_errors_ii)
+average_rmse_error_ii <- mean(rmse_test_errors_ii)
+average_r2_error_ii <- mean(r2_test_errors_ii)
+
+cat(paste0(
+  "Average Test Errors (Original Model):\n",
+  "MSE: ", average_test_error_i, "\n",
+  "RMSE: ", average_rmse_error_i, "\n",
+  "R-squared: ", average_r2_error_i, "\n\n",
+  
+  "Average Test Errors (Dummy Model):\n",
+  "MSE: ", average_test_error_ii, "\n",
+  "RMSE: ", average_rmse_error_ii, "\n",
+  "R-squared: ", average_r2_error_ii, "\n"
+))
+```
+
+```{r}
+# Create data frames for plotting
+errors_df_mse <- data.frame(
+  Error = c(mse_test_errors_i, mse_test_errors_ii),
+  Metric = 'MSE',
+  Model = factor(rep(c("Original", "Dummy"), each = 200))
+)
+errors_df_rmse <- data.frame(
+  Error = c(rmse_test_errors_i, rmse_test_errors_ii),
+  Metric = 'RMSE',
+  Model = factor(rep(c("Original", "Dummy"), each = 200))
+)
+errors_df_r2 <- data.frame(
+  Error = c(r2_test_errors_i, r2_test_errors_ii),
+  Metric = 'R-squared',
+  Model = factor(rep(c("Original", "Dummy"), each = 200))
+)
+errors_df <- rbind(errors_df_mse, errors_df_rmse, errors_df_r2)
+
+# Ensure the 'Metric' factor has the correct level order
+errors_df$Metric <- factor(errors_df$Metric, levels = c('MSE', 'RMSE', 'R-squared'))
+
+# Plot the empirical distributions of the test errors
+ggplot(errors_df, aes(x = Error, fill = Model)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ Metric, scales = "free") +
+  labs(title = "Empirical Distributions of Test Errors", x = "Test Error", y = "Density") +
+  theme_minimal()
+```
+
+
+```{r}
+# Plot the empirical distributions of the test errors using boxplots
+ggplot(errors_df, aes(x = Metric, y = Error, fill = Model)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Boxplots of Test Errors", x = "Error Metric", y = "Error Value") +
+  theme_minimal() +
+  theme(legend.position = "top")
+```
+
+
+
