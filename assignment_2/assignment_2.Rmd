@@ -1,19 +1,20 @@
 ---
 title: "assignment_2"
 output:
+  pdf_document: 
+    toc: true
+    toc_depth: 3
   html_document:
     df_print: paged
-  pdf_document: default
 date: "2024-10-16"
 editor_options:
   chunk_output_type: inline
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-```{r}
 library(caTools)
 library(ggplot2)
 library(gridExtra)
@@ -38,7 +39,9 @@ names(data) <- c(
 head(data)
 ```
 
-## a. Split the data into a training and a test set, with approximately 2/3 and 1/3 of the observations, respectively.
+## a. Dataset spliting
+
+Split the data into a training and a test set, with approximately 2/3 and 1/3 of the observations, respectively.
 
 ```{r}
 # Use 70% of dataset as training set and remaining 30% as testing set
@@ -51,7 +54,9 @@ test   <- subset(data, sample == FALSE)
 cat("Dimension of Training Set:", paste(dim(train), collapse = "x"), "\nDimension of Test Set:", paste(dim(test), collapse = "x"), "\n")
 ```
 
-### (i) Model each of them directly as a linear effect
+### (i) Orginal Model
+
+Model each of them directly as a linear effect
 
 ```{r}
 train_i = train
@@ -121,7 +126,9 @@ ggplot(combined_data, aes(x = LC50, y = predicted_LC50, color = Type)) +
   theme(legend.position = "bottom")
 ```
 
-### (ii). Transform each of them using a 0/1 dummy encoding where 0 represents absence of the specific atom and 1 represents presence of the specific atoms.
+### (ii). Dummy encoding
+
+Transform 3 count variables (H050, nN, C040) using a 0/1 dummy encoding where 0 represents absence of the specific atom and 1 represents presence of the specific atoms.
 
 ```{r}
 # To make sure we use the same split in (i)
@@ -130,7 +137,7 @@ test_ii = test
 ```
 
 ```{r}
-# Transform 3 count variable (H050, nN, C040) into 0/1 in train and test datasets
+# Transform 3 count variables (H050, nN, C040) into 0/1 in train and test datasets
 
 train_ii$H050 <- ifelse(train_ii$H050 > 0, 1, 0)
 train_ii$nN <- ifelse(train_ii$nN > 0, 1, 0)
@@ -260,7 +267,16 @@ test_plot <- test_plot + labs(title = "Testing Data")
 grid.arrange(train_plot, test_plot, ncol = 2)
 ```
 
-## b. Repeat the procedure described in (a) 200 times, such that each time: you do a new training/test split (with same proportions as in (a)), fit the models with option (i) and (ii), and record the test errors. Make a plot that illustrates the empirical distributions of the test error for each modelling option and compare the average test error. What is the point of repeating the experiment in this way before drawing any conclusions? Try to explain why one often obtains, like in this case, a worse result by using option (ii).
+## b. Repeating the procedure 200 times
+
+Procedure
+
+  - Randomly spiting training/test (70%/30%).
+  
+  - Fit the models with 2 options (i) Original model and (ii) Dummy encoding.
+  
+  - Record the test errors (MSE/RMSE/$R^2$).
+
 
 ```{r}
 # Initialize vectors to store test errors
@@ -312,8 +328,13 @@ for (i in 1:200) {
 }
 ```
 
+Make a plot that illustrates the empirical distributions of the test error for each modelling option and compare the average test error. What is the point of repeating the experiment in this way before drawing any conclusions? Try to explain why one often obtains, like in this case, a worse result by using option (ii).
+
+Initials insight:
+
 - Method 1: performs better in term of MSE
-- Method 2: better in reduce overfitting
+
+- Method 2: better in reduce over fitting
 
 
 ```{r}
