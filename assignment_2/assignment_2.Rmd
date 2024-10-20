@@ -21,6 +21,11 @@ library(caTools)
 library(ggplot2)
 library(gridExtra)
 library(MASS)
+library(glmnet)
+library(boot)
+library(mgcv)
+library(rpart)
+library(rpart.plot)
 ```
 
 # Problem 1. Regression
@@ -509,4 +514,148 @@ metrics <- data.frame(
 )
 print(metrics)
 ```
+
+## d. Ridge Regression
+
+```{r}
+set.seed(1)
+sample <- sample.split(data$LC50, SplitRatio = 0.7)
+train <- subset(data, sample == TRUE)
+test <- subset(data, sample == FALSE)
+
+x_train <- as.matrix(train[, -9])
+y_train <- train$LC50
+x_test <- as.matrix(test[, -9])
+y_test <- test$LC50
+```
+
+### Cross Validation
+
+```{r}
+# Define a grid of candidate lambda values
+lambda_grid <- 10^seq(10, -2, length = 100)
+
+# Perform cross-validation for ridge regression
+cv_ridge <- cv.glmnet(x_train, y_train, alpha = 0, lambda = lambda_grid, standardize = TRUE)
+best_lambda_cv <- cv_ridge$lambda.min
+print(paste("Best Lambda from Cross-Validation:", best_lambda_cv))
+
+# Predict and evaluate on test data
+ridge_pred_cv <- predict(cv_ridge, s = best_lambda_cv, newx = x_test)
+mse_cv <- mean((ridge_pred_cv - y_test)^2)
+print(paste("Test MSE for Ridge Regression (Cross-Validation):", mse_cv))
+```
+
+
+
+
+### Bootstrap Procedure
+
+```{r}
+# Define ridge regression function for bootstrap
+ridge_bootstrap <- function(dataset, indices, lambda) {
+  d <- dataset[indices, ]  # subset data
+  x_boot <- as.matrix(d[, -9])
+  y_boot <- d$LC50
+  ridge_model <- glmnet(x_boot, y_boot, alpha = 0, lambda = lambda, standardize = TRUE)
+  return(ridge_model)
+}
+
+# Bootstrap procedure
+set.seed(1)
+num_bootstraps <- 100
+boot_results <- sapply(lambda_grid, function(lambda) {
+  boot_mses <- replicate(num_bootstraps, {
+    sample_indices <- sample(1:nrow(train), replace = TRUE)
+    ridge_model <- ridge_bootstrap(train, sample_indices, lambda)
+    boot_pred <- predict(ridge_model, s = lambda, newx = x_test)
+    mean((boot_pred - y_test)^2)
+  })
+  mean(boot_mses)
+})
+
+# Find the optimal lambda
+best_lambda_bootstrap <- lambda_grid[which.min(boot_results)]
+print(paste("Best Lambda from Bootstrap:", best_lambda_bootstrap))
+
+# Predict and evaluate on test data
+ridge_pred_bootstrap <- predict(cv_ridge, s = best_lambda_bootstrap, newx = x_test)
+mse_bootstrap <- mean((ridge_pred_bootstrap - y_test)^2)
+print(paste("Test MSE for Ridge Regression (Bootstrap):", mse_bootstrap))
+```
+
+### Result
+
+```{r}
+# Create comparison data frame
+comparison_df <- data.frame(
+  Lambda = rep(lambda_grid, 2),
+  MSE = c(cv_ridge$cvm, boot_results),
+  Method = rep(c("Cross-Validation", "Bootstrap"), each = length(lambda_grid))
+)
+
+# Plot the results
+ggplot(comparison_df, aes(x = log(Lambda), y = MSE, color = Method)) +
+  geom_line() +
+  labs(title = "Ridge Regression: Cross-Validation vs Bootstrap", x = "Log(Lambda)", y = "Mean Squared Error") +
+  theme_minimal()
+
+```
+
+
+## e. Generalised Additive Model (GAM)
+
+```{r}
+# Fit GAM with smoothing splines (lower complexity)
+gam_model_1 <- gam(LC50 ~ s(TPSA, k = 4) + s(SAacc, k = 4) + s(H050, k = 4) + 
+                      s(MLOGP, k = 4) + s(RDCHI, k = 4) + s(GATS1p, k = 4) + 
+                      s(nN, k = 4) + s(C040, k = 4), data = train)
+
+# Summarize models
+summary(gam_model_1)
+
+# Predict and evaluate on test data
+gam_pred_1 <- predict(gam_model_1, newdata = test)
+gam_mse_1 <- mean((gam_pred_1 - y_test)^2)
+gam_rmse_1 <- sqrt(gam_mse_1)
+gam_r2_1 <- 1 - (sum((gam_pred_1 - y_test)^2) / sum((y_test - mean(y_test))^2))
+print(paste("Test MSE for GAM Model 1 (k=4):", gam_mse_1))
+print(paste("Test RMSE for GAM Model 1 (k=4):", gam_rmse_1))
+print(paste("Test R2 for GAM Model 1 (k=4):", gam_r2_1))
+```
+
+
+
+## e. Regression Tree with Cost-Complexity Pruning
+
+```{r}
+# Fit a regression tree model
+tree_model <- rpart(LC50 ~ ., data = train, method = "anova", control = rpart.control(cp = 0.001))
+printcp(tree_model)  # Display the cost complexity pruning table
+
+# Prune the tree
+optimal_cp <- tree_model$cptable[which.min(tree_model$cptable[,"xerror"]), "CP"]
+pruned_tree <- prune(tree_model, cp = optimal_cp)
+```
+
+```{r}
+# Visualize the tree
+rpart.plot(pruned_tree, main = "Pruned Regression Tree")
+```
+
+
+
+```{r}
+# Predict and evaluate on test data
+tree_pred <- predict(pruned_tree, newdata = test)
+tree_mse <- mean((tree_pred - y_test)^2)
+tree_rmse <- sqrt(tree_mse)
+tree_r2 <- 1 - (sum((tree_pred - y_test)^2) / sum((y_test - mean(y_test))^2))
+print(paste("Test MSE for Regression Tree:", tree_mse))
+print(paste("Test RMSE for Regression Tree:", tree_rmse))
+print(paste("Test R2 for Regression Tree:", tree_r2))
+```
+
+## f. Compare all the models implemented
+
 
