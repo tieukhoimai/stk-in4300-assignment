@@ -548,7 +548,6 @@ print(paste("Test MSE for Ridge Regression (Cross-Validation):", mse_cv))
 
 
 
-
 ### Bootstrap Procedure
 
 ```{r}
@@ -584,7 +583,7 @@ mse_bootstrap <- mean((ridge_pred_bootstrap - y_test)^2)
 print(paste("Test MSE for Ridge Regression (Bootstrap):", mse_bootstrap))
 ```
 
-### Result
+### Cross Validation vs Bootstrap Comparision
 
 ```{r}
 # Create comparison data frame
@@ -613,20 +612,26 @@ gam_model_1 <- gam(LC50 ~ s(TPSA, k = 4) + s(SAacc, k = 4) + s(H050, k = 4) +
 
 # Summarize models
 summary(gam_model_1)
+```
 
-# Predict and evaluate on test data
+
+```{r}
 gam_pred_1 <- predict(gam_model_1, newdata = test)
 gam_mse_1 <- mean((gam_pred_1 - y_test)^2)
 gam_rmse_1 <- sqrt(gam_mse_1)
 gam_r2_1 <- 1 - (sum((gam_pred_1 - y_test)^2) / sum((y_test - mean(y_test))^2))
-print(paste("Test MSE for GAM Model 1 (k=4):", gam_mse_1))
-print(paste("Test RMSE for GAM Model 1 (k=4):", gam_rmse_1))
-print(paste("Test R2 for GAM Model 1 (k=4):", gam_r2_1))
+
+cat(paste0(
+  "MSE: ", gam_mse_1, "\n",
+  "RMSE (Test): ", gam_rmse_1, "\n",
+  "R-squared (Test): ", gam_r2_1, "\n"
+))
 ```
 
 
 
-## e. Regression Tree with Cost-Complexity Pruning
+
+## f. Regression Tree with Cost-Complexity Pruning
 
 ```{r}
 # Fit a regression tree model
@@ -651,11 +656,15 @@ tree_pred <- predict(pruned_tree, newdata = test)
 tree_mse <- mean((tree_pred - y_test)^2)
 tree_rmse <- sqrt(tree_mse)
 tree_r2 <- 1 - (sum((tree_pred - y_test)^2) / sum((y_test - mean(y_test))^2))
-print(paste("Test MSE for Regression Tree:", tree_mse))
-print(paste("Test RMSE for Regression Tree:", tree_rmse))
-print(paste("Test R2 for Regression Tree:", tree_r2))
+
+cat(paste0(
+  "MSE: ", tree_mse, "\n",
+  "RMSE (Test): ", tree_rmse, "\n",
+  "R-squared (Test): ", tree_r2, "\n"
+))
 ```
 
-## f. Compare all the models implemented
+## g. Compare all the models implemented
 
 
+# Problem 2. Classification

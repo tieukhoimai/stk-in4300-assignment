@@ -1656,15 +1656,17 @@ Regression</a>
 <li><a href="#cross-validation" id="toc-cross-validation">Cross
 Validation</a></li>
 <li><a href="#bootstrap-procedure" id="toc-bootstrap-procedure">Bootstrap Procedure</a></li>
-<li><a href="#result" id="toc-result">Result</a></li>
+<li><a href="#cross-validation-vs-bootstrap-comparision" id="toc-cross-validation-vs-bootstrap-comparision">Cross Validation vs
+Bootstrap Comparision</a></li>
 </ul></li>
 <li><a href="#e.-generalised-additive-model-gam" id="toc-e.-generalised-additive-model-gam">e. Generalised Additive Model
 (GAM)</a></li>
-<li><a href="#e.-regression-tree-with-cost-complexity-pruning" id="toc-e.-regression-tree-with-cost-complexity-pruning">e. Regression
+<li><a href="#f.-regression-tree-with-cost-complexity-pruning" id="toc-f.-regression-tree-with-cost-complexity-pruning">f. Regression
 Tree with Cost-Complexity Pruning</a></li>
-<li><a href="#f.-compare-all-the-models-implemented" id="toc-f.-compare-all-the-models-implemented">f. Compare all the models
+<li><a href="#g.-compare-all-the-models-implemented" id="toc-g.-compare-all-the-models-implemented">g. Compare all the models
 implemented</a></li>
 </ul></li>
+<li><a href="#problem-2.-classification" id="toc-problem-2.-classification">Problem 2. Classification</a></li>
 </ul>
 </div>
 
@@ -2375,8 +2377,8 @@ mse_bootstrap &lt;- mean((ridge_pred_bootstrap - y_test)^2)
 print(paste(&quot;Test MSE for Ridge Regression (Bootstrap):&quot;, mse_bootstrap))</code></pre>
 <pre><code>## [1] &quot;Test MSE for Ridge Regression (Bootstrap): 1.48997767453051&quot;</code></pre>
 </div>
-<div id="result" class="section level3">
-<h3>Result</h3>
+<div id="cross-validation-vs-bootstrap-comparision" class="section level3">
+<h3>Cross Validation vs Bootstrap Comparision</h3>
 <pre class="r"><code># Create comparison data frame
 comparison_df &lt;- data.frame(
   Lambda = rep(lambda_grid, 2),
@@ -2431,20 +2433,22 @@ summary(gam_model_1)</code></pre>
 ## 
 ## R-sq.(adj) =  0.537   Deviance explained = 55.5%
 ## GCV = 1.3739  Scale est. = 1.3172    n = 382</code></pre>
-<pre class="r"><code># Predict and evaluate on test data
-gam_pred_1 &lt;- predict(gam_model_1, newdata = test)
+<pre class="r"><code>gam_pred_1 &lt;- predict(gam_model_1, newdata = test)
 gam_mse_1 &lt;- mean((gam_pred_1 - y_test)^2)
 gam_rmse_1 &lt;- sqrt(gam_mse_1)
 gam_r2_1 &lt;- 1 - (sum((gam_pred_1 - y_test)^2) / sum((y_test - mean(y_test))^2))
-print(paste(&quot;Test MSE for GAM Model 1 (k=4):&quot;, gam_mse_1))</code></pre>
-<pre><code>## [1] &quot;Test MSE for GAM Model 1 (k=4): 1.74758290420457&quot;</code></pre>
-<pre class="r"><code>print(paste(&quot;Test RMSE for GAM Model 1 (k=4):&quot;, gam_rmse_1))</code></pre>
-<pre><code>## [1] &quot;Test RMSE for GAM Model 1 (k=4): 1.32196176351836&quot;</code></pre>
-<pre class="r"><code>print(paste(&quot;Test R2 for GAM Model 1 (k=4):&quot;, gam_r2_1))</code></pre>
-<pre><code>## [1] &quot;Test R2 for GAM Model 1 (k=4): 0.324766151228741&quot;</code></pre>
+
+cat(paste0(
+  &quot;MSE: &quot;, gam_mse_1, &quot;\n&quot;,
+  &quot;RMSE (Test): &quot;, gam_rmse_1, &quot;\n&quot;,
+  &quot;R-squared (Test): &quot;, gam_r2_1, &quot;\n&quot;
+))</code></pre>
+<pre><code>## MSE: 1.74758290420457
+## RMSE (Test): 1.32196176351836
+## R-squared (Test): 0.324766151228741</code></pre>
 </div>
-<div id="e.-regression-tree-with-cost-complexity-pruning" class="section level2">
-<h2>e. Regression Tree with Cost-Complexity Pruning</h2>
+<div id="f.-regression-tree-with-cost-complexity-pruning" class="section level2">
+<h2>f. Regression Tree with Cost-Complexity Pruning</h2>
 <pre class="r"><code># Fit a regression tree model
 tree_model &lt;- rpart(LC50 ~ ., data = train, method = &quot;anova&quot;, control = rpart.control(cp = 0.001))
 printcp(tree_model)  # Display the cost complexity pruning table</code></pre>
@@ -2493,16 +2497,22 @@ tree_pred &lt;- predict(pruned_tree, newdata = test)
 tree_mse &lt;- mean((tree_pred - y_test)^2)
 tree_rmse &lt;- sqrt(tree_mse)
 tree_r2 &lt;- 1 - (sum((tree_pred - y_test)^2) / sum((y_test - mean(y_test))^2))
-print(paste(&quot;Test MSE for Regression Tree:&quot;, tree_mse))</code></pre>
-<pre><code>## [1] &quot;Test MSE for Regression Tree: 1.71542676693984&quot;</code></pre>
-<pre class="r"><code>print(paste(&quot;Test RMSE for Regression Tree:&quot;, tree_rmse))</code></pre>
-<pre><code>## [1] &quot;Test RMSE for Regression Tree: 1.30974301561025&quot;</code></pre>
-<pre class="r"><code>print(paste(&quot;Test R2 for Regression Tree:&quot;, tree_r2))</code></pre>
-<pre><code>## [1] &quot;Test R2 for Regression Tree: 0.337190690444957&quot;</code></pre>
+
+cat(paste0(
+  &quot;MSE: &quot;, tree_mse, &quot;\n&quot;,
+  &quot;RMSE (Test): &quot;, tree_rmse, &quot;\n&quot;,
+  &quot;R-squared (Test): &quot;, tree_r2, &quot;\n&quot;
+))</code></pre>
+<pre><code>## MSE: 1.71542676693984
+## RMSE (Test): 1.30974301561025
+## R-squared (Test): 0.337190690444957</code></pre>
 </div>
-<div id="f.-compare-all-the-models-implemented" class="section level2">
-<h2>f. Compare all the models implemented</h2>
+<div id="g.-compare-all-the-models-implemented" class="section level2">
+<h2>g. Compare all the models implemented</h2>
 </div>
+</div>
+<div id="problem-2.-classification" class="section level1">
+<h1>Problem 2. Classification</h1>
 </div>
 
 
