@@ -1625,6 +1625,34 @@ display: none;
 
 </div>
 
+<div id="TOC">
+<ul>
+<li><a href="#problem-1.-regression" id="toc-problem-1.-regression">Problem 1. Regression</a>
+<ul>
+<li><a href="#a.-dataset-spliting" id="toc-a.-dataset-spliting">a.
+Dataset spliting</a>
+<ul>
+<li><a href="#i-orginal-model" id="toc-i-orginal-model">(i) Orginal
+Model</a></li>
+<li><a href="#ii.-dummy-encoding" id="toc-ii.-dummy-encoding">(ii).
+Dummy encoding</a></li>
+</ul></li>
+<li><a href="#b.-repeating-the-procedure-200-times" id="toc-b.-repeating-the-procedure-200-times">b. Repeating the procedure
+200 times</a></li>
+<li><a href="#c.-variable-selection-procedures" id="toc-c.-variable-selection-procedures">c. Variable selection
+procedures</a>
+<ul>
+<li><a href="#forward-selection" id="toc-forward-selection">Forward
+Selection</a></li>
+<li><a href="#backward-elimination" id="toc-backward-elimination">Backward Elimination</a></li>
+<li><a href="#stepwise-selection" id="toc-stepwise-selection">Stepwise
+Selection</a></li>
+<li><a href="#model-comparison" id="toc-model-comparison">Model
+Comparison</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
 
 <div id="problem-1.-regression" class="section level1">
 <h1>Problem 1. Regression</h1>
@@ -2163,9 +2191,8 @@ summary(model.backward.bic)</code></pre>
 ## Multiple R-squared:  0.5068, Adjusted R-squared:  0.4989 
 ## F-statistic: 64.22 on 6 and 375 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
-</div>
-<div id="stepwise-selection" class="section level2">
-<h2>Stepwise Selection</h2>
+<div id="stepwise-selection" class="section level3">
+<h3>Stepwise Selection</h3>
 <pre class="r"><code># With AIC
 model.stepwise.aic &lt;- stepAIC(null.model, scope = list(lower = null.model, upper = full.model), direction = &#39;both&#39;, trace = FALSE)
 summary(model.stepwise.aic)</code></pre>
@@ -2220,6 +2247,7 @@ summary(model.stepwise.bic)</code></pre>
 ## Residual standard error: 1.193 on 375 degrees of freedom
 ## Multiple R-squared:  0.5068, Adjusted R-squared:  0.4989 
 ## F-statistic: 64.22 on 6 and 375 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
 <div id="model-comparison" class="section level3">
 <h3>Model Comparison</h3>
 <pre class="r"><code># Predict on the test set using all models
