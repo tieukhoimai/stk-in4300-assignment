@@ -1,11 +1,11 @@
 ---
 title: "assignment_2"
 output:
-  html_document:
-    df_print: paged
+  pdf_document: 
     toc: true
     toc_depth: 3
-  pdf_document: 
+  html_document:
+    df_print: paged
     toc: true
     toc_depth: 3
 date: "2024-10-16"
@@ -53,8 +53,8 @@ Split the data into a training and a test set, with approximately 2/3 and 1/3 of
 
 ```{r}
 # Use 70% of dataset as training set and remaining 30% as testing set
-set.seed(1)
-sample <- sample.split(data$LC50, SplitRatio = 0.7)
+set.seed(123)
+sample <- sample.split(data$LC50, SplitRatio = 2/3)
 train  <- subset(data, sample == TRUE)
 test   <- subset(data, sample == FALSE)
 ```
@@ -300,7 +300,7 @@ r2_test_errors_ii <- numeric(200)
 set.seed(2)
 for (i in 1:200) {
   # Split the data
-  sample <- sample.split(data$LC50, SplitRatio = 0.7)
+  sample <- sample.split(data$LC50, SplitRatio = 2/3)
   train <- subset(data, sample == TRUE)
   test <- subset(data, sample == FALSE)
   
@@ -414,9 +414,9 @@ ggplot(errors_df, aes(x = Metric, y = Error, fill = Model)) +
 (at least backward elimination and forward selection) with different stopping criteria (at least AIC and BIC) and compare the results. Do you obtain the same model?
 
 ```{r}
-# Split the data into training (70%) and test (30%) sets
-set.seed(1)
-sample <- sample.split(data$LC50, SplitRatio = 0.7)
+# Split the data into training (2/3) and test (1/3) sets
+set.seed(123)
+sample <- sample.split(data$LC50, SplitRatio = 2/3)
 train <- subset(data, sample == TRUE)
 test <- subset(data, sample == FALSE)
 
@@ -518,8 +518,8 @@ print(metrics)
 ## d. Ridge Regression
 
 ```{r}
-set.seed(1)
-sample <- sample.split(data$LC50, SplitRatio = 0.7)
+set.seed(123)
+sample <- sample.split(data$LC50, SplitRatio = 2/3)
 train <- subset(data, sample == TRUE)
 test <- subset(data, sample == FALSE)
 
@@ -561,7 +561,7 @@ ridge_bootstrap <- function(dataset, indices, lambda) {
 }
 
 # Bootstrap procedure
-set.seed(1)
+set.seed(123)
 num_bootstraps <- 100
 boot_results <- sapply(lambda_grid, function(lambda) {
   boot_mses <- replicate(num_bootstraps, {
@@ -668,3 +668,238 @@ cat(paste0(
 
 
 # Problem 2. Classification
+
+```{r}
+library(mlbench)
+data("PimaIndiansDiabetes2")
+```
+
+
+```{r}
+data <- PimaIndiansDiabetes2
+head(data)
+```
+
+```{r}
+# Checking missing value
+sapply(data, function(x) sum(is.na(x)))
+```
+
+
+```{r}
+# Remove rows with missing values
+data <- na.omit(data)
+head(data)
+```
+
+
+```{r}
+summary(data)
+```
+
+```{r}
+# Checking how balance is with the dependent variable
+prop.table(table(data$diabetes))
+```
+
+Randomly split the dataset into a training set (approximately 2/3 of the sample size) and a test set, such that the class distributions (i.e. the empirical distribution of diabetes) is similar in the two sets.
+
+```{r}
+set.seed(123)
+
+sample <- sample.split(data$diabetes, SplitRatio = 2/3)
+train <- subset(data, sample == TRUE)
+test <- subset(data, sample == FALSE)
+```
+
+
+```{r}
+# Class distribution in the training set
+prop.table(table(train$diabetes))
+
+# Class distribution in the testing set
+prop.table(table(test$diabetes))
+```
+
+```{r}
+cat("Dimension of Training Set:", paste(dim(train), collapse = "x"), "\nDimension of Test Set:", paste(dim(test), collapse = "x"), "\n")
+```
+
+## a. k-NN classifier
+
+```{r}
+library(class)
+library(caret)
+library(FNN)
+```
+
+
+```{r}
+X_train <- train[, -ncol(train)]
+y_train <- train$diabetes
+
+X_test <- test[, -ncol(test)]
+y_test <- test$diabetes
+```
+
+
+```{r}
+accuracy = function(actual, predicted) {
+  mean(actual == predicted)
+}
+
+set.seed(42)
+k_to_try = 1:100
+acc_k = rep(0, length(k_to_try))
+
+# Loop over values of k
+for (i in seq_along(k_to_try)) {
+  pred <- knn(
+    train = scale(X_train), 
+    test = scale(X_test), 
+    cl = y_train, 
+    k = k_to_try[i]
+  )
+  acc_k[i] <- accuracy(y_test, pred)
+}
+```
+
+
+```{r}
+ex_seq = seq(from = 1, to = 100, by = 5)
+seq_along(ex_seq)
+
+ex_storage = rep(x = 0, times = length(ex_seq))
+for(i in seq_along(ex_seq)) {
+  ex_storage[i] = mean(rnorm(n = 10, mean = ex_seq[i], sd = 1))
+}
+
+ex_storage
+```
+
+
+```{r}
+# plot accuracy vs choice of k
+plot(acc_k, type = "b", col = "dodgerblue", cex = 1, pch = 20, 
+     xlab = "k, number of neighbors", ylab = "classification accuracy",
+     main = "Accuracy vs Neighbors")
+# add lines indicating k with best accuracy
+abline(v = which(acc_k == max(acc_k)), col = "darkorange", lwd = 1.5)
+# add line for max accuracy seen
+abline(h = max(acc_k), col = "grey", lty = 2)
+# add line for prevalence in test set
+abline(h = mean(y_test == "No"), col = "grey", lty = 2)
+```
+
+```{r}
+max(acc_k)
+```
+
+
+```{r}
+max(which(acc_k == max(acc_k)))
+```
+
+
+### Using 5-fold
+
+```{r}
+# 5-fold cross-validation using caret
+train_control <- trainControl(method = "cv", number = 5)
+train_knn <- train(diabetes ~ ., 
+                   data = train, 
+                   method = "knn", 
+                   trControl = train_control, 
+                   tuneGrid = expand.grid(k = k_to_try))
+
+## plot(train_knn)
+
+cv_results <- train_knn$results
+
+cv_results
+
+```
+
+```{r}
+# Plot the 5-fold CV accuracy vs choice of k
+
+plot(cv_results$k, cv_results$Accuracy, type = "b", col = "red", cex = 1, pch = 20,
+     xlab = "k, number of neighbors", ylab = "classification accuracy",
+     main = "5-fold CV Accuracy vs Neighbors")
+#legend("bottomright", legend = "5-fold CV Accuracy", col = "red", pch = 19, lty = 1)
+
+# Add lines indicating k with best accuracy
+abline(v = cv_results$k[which.max(cv_results$Accuracy)], col = "darkorange", lwd = 1.5)
+# Add line for max accuracy seen
+abline(h = max(cv_results$Accuracy), col = "grey", lty = 2)
+```
+
+
+```{r}
+max(cv_results$Accuracy)
+```
+
+
+```{r}
+cv_results$k[which.max(cv_results$Accuracy)]
+```
+
+### Using leave-one-out cross-validation
+
+```{r}
+# leave-one-out cross-validation using caret
+train_control_loocv <- trainControl(method = "LOOCV")
+train_knn_loocv <- train(diabetes ~ ., 
+                   data = train, 
+                   method = "knn", 
+                   trControl = train_control_loocv, 
+                   tuneGrid = expand.grid(k = k_to_try))
+
+cv_results_loocv <- train_knn_loocv$results
+
+cv_results_loocv
+```
+
+```{r}
+# Plot the LOOCV accuracy vs choice of k
+
+plot(cv_results_loocv$k, cv_results_loocv$Accuracy, type = "b", col = "red", cex = 1, pch = 20,
+     xlab = "k, number of neighbors", ylab = "classification accuracy",
+     main = "LOOCV Accuracy vs Neighbors")
+
+# Add lines indicating k with best accuracy
+abline(v = cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)], col = "darkorange", lwd = 1.5)
+# Add line for max accuracy seen
+abline(h = max(cv_results_loocv$Accuracy), col = "grey", lty = 2)
+```
+
+
+```{r}
+max(cv_results_loocv$Accuracy)
+```
+
+
+```{r}
+cv_results$k[which.max(cv_results_loocv$Accuracy)]
+```
+
+## b. Generalised Additive Model (GAM)
+
+```{r}
+# Fit a GAM with automatic smoothness selection
+gam_model <- gam(
+      diabetes ~ s(glucose) + s(pressure) + s(insulin) + s(mass) + s(pedigree) + s(age) + s(pregnant), 
+      data = train,
+      family = binomial(link = 'logit'),
+      select = TRUE)
+
+summary(gam_model)
+```
+
+```{r}
+# Plot the estimated smooth terms
+plot(gam_model, pages = 1, scale = 0)
+```
+
+[TBD] add variable selection step
+
