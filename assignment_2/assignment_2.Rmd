@@ -1,11 +1,11 @@
 ---
 title: "assignment_2"
 output:
-  pdf_document: 
-    toc: true
-    toc_depth: 3
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+  pdf_document: 
     toc: true
     toc_depth: 3
 date: "2024-10-16"
@@ -230,7 +230,7 @@ train_combined <- train_i[, c("LC50", "predicted_LC50")]
 train_combined$Method <- 'Original'
 train_combined$Type <- 'Train'
 train_ii_combined <- train_ii[, c("LC50", "predicted_LC50")]
-train_ii_combined$Method <- 'Dummy'
+train_ii_combined$Method <- 'Dummy Encoding'
 train_ii_combined$Type <- 'Train'
 train_combined_all <- rbind(train_combined, train_ii_combined)
 
@@ -238,13 +238,13 @@ test_combined <- test_i[, c("LC50", "predicted_LC50")]
 test_combined$Method <- 'Original'
 test_combined$Type <- 'Test'
 test_ii_combined <- test_ii[, c("LC50", "predicted_LC50")]
-test_ii_combined$Method <- 'Dummy'
+test_ii_combined$Method <- 'Dummy Encoding'
 test_ii_combined$Type <- 'Test'
 test_combined_all <- rbind(test_combined, test_ii_combined)
 
 # Convert 'Method' and 'Type' to factors
-train_combined_all$Method <- factor(train_combined_all$Method, levels = c('Original', 'Dummy'))
-test_combined_all$Method <- factor(test_combined_all$Method, levels = c('Original', 'Dummy'))
+train_combined_all$Method <- factor(train_combined_all$Method, levels = c('Original', 'Dummy Encoding'))
+test_combined_all$Method <- factor(test_combined_all$Method, levels = c('Original', 'Dummy Encoding'))
 
 # Function to draw regression lines
 add_regression_lines <- function(df, original_model, dummy_model) {
@@ -547,7 +547,6 @@ print(paste("Test MSE for Ridge Regression (Cross-Validation):", mse_cv))
 ```
 
 
-
 ### Bootstrap Procedure
 
 ```{r}
@@ -605,6 +604,11 @@ ggplot(comparison_df, aes(x = log(Lambda), y = MSE, color = Method)) +
 ## e. Generalised Additive Model (GAM)
 
 ```{r}
+summary(train)
+```
+### Lower Complexity (k = 4)
+
+```{r}
 # Fit GAM with smoothing splines (lower complexity)
 gam_model_1 <- gam(LC50 ~ s(TPSA, k = 4) + s(SAacc, k = 4) + s(H050, k = 4) + 
                       s(MLOGP, k = 4) + s(RDCHI, k = 4) + s(GATS1p, k = 4) + 
@@ -612,6 +616,25 @@ gam_model_1 <- gam(LC50 ~ s(TPSA, k = 4) + s(SAacc, k = 4) + s(H050, k = 4) +
 
 # Summarize models
 summary(gam_model_1)
+```
+
+```{r}
+# reference: https://stackoverflow.com/questions/67077306/plotting-output-of-gam-model
+
+p_obj <- plot(gam_model_1, residuals = TRUE, pages = 1, scale = 0)
+p_obj <- p_obj[[1]] # just one smooth so select the first component
+sm_df <- as.data.frame(p_obj[c("x", "se", "fit")])
+data_df <- as.data.frame(p_obj[c("raw", "p.resid")])
+
+## plot
+ggplot(sm_df, aes(x = x, y = fit)) +
+  geom_rug(data = data_df, mapping = aes(x = raw, y = NULL),
+           sides = "b") +
+  geom_point(data = data_df, mapping = aes(x = raw, y = p.resid)) +
+  geom_ribbon(aes(ymin = fit - se, ymax = fit + se, y = NULL),
+              alpha = 0.3) +
+  geom_line() +
+  labs(x = p_obj$xlab, y = p_obj$ylab)
 ```
 
 
@@ -628,8 +651,47 @@ cat(paste0(
 ))
 ```
 
+### Higher Complexity (k = 6)
 
+```{r}
+# Fit GAM with smoothing splines (higher complexity)
+gam_model_2 <- gam(LC50 ~ s(TPSA, k = 6) + s(SAacc, k = 6) + s(H050, k = 6) + 
+                      s(MLOGP, k = 6) + s(RDCHI, k = 6) + s(GATS1p, k = 6) + 
+                      s(nN, k = 6) + s(C040, k = 6), data = train)
 
+# Summarize models
+summary(gam_model_2)
+```
+
+```{r}
+p_obj_2 <- plot(gam_model_2, residuals = TRUE, pages = 1, scale = 0)
+p_obj_2 <- p_obj_2[[1]] # just one smooth so select the first component
+sm_df_2 <- as.data.frame(p_obj_2[c("x", "se", "fit")])
+data_df_2 <- as.data.frame(p_obj_2[c("raw", "p.resid")])
+
+## plot
+ggplot(sm_df, aes(x = x, y = fit)) +
+  geom_rug(data = data_df_2, mapping = aes(x = raw, y = NULL),
+           sides = "b") +
+  geom_point(data = data_df_2, mapping = aes(x = raw, y = p.resid)) +
+  geom_ribbon(aes(ymin = fit - se, ymax = fit + se, y = NULL),
+              alpha = 0.3) +
+  geom_line() +
+  labs(x = p_obj_2$xlab, y = p_obj_2$ylab)
+```
+
+```{r}
+gam_pred_2 <- predict(gam_model_2, newdata = test)
+gam_mse_2 <- mean((gam_pred_2 - y_test)^2)
+gam_rmse_2 <- sqrt(gam_mse_2)
+gam_r2_2 <- 1 - (sum((gam_pred_2 - y_test)^2) / sum((y_test - mean(y_test))^2))
+
+cat(paste0(
+  "MSE: ", gam_mse_2, "\n",
+  "RMSE (Test): ", gam_rmse_2, "\n",
+  "R-squared (Test): ", gam_r2_2, "\n"
+))
+```
 
 ## f. Regression Tree with Cost-Complexity Pruning
 
@@ -666,6 +728,7 @@ cat(paste0(
 
 ## g. Compare all the models implemented
 
+[TBD]
 
 # Problem 2. Classification
 
@@ -902,4 +965,60 @@ plot(gam_model, pages = 1, scale = 0)
 ```
 
 [TBD] add variable selection step
+
+## c. Tree-based methods
+
+```{r, results='hide', warning=FALSE}
+library(rpart)
+library(randomForest)
+```
+
+
+### (i) Classification tree
+
+[TBD]
+
+```{r}
+tree_model <- rpart(diabetes ~ ., data = train, method = "class")
+
+# Predict and compute errors
+tree_train_pred <- predict(tree_model, train, type = "class")
+tree_test_pred <- predict(tree_model, test, type = "class")
+tree_train_error <- mean(tree_train_pred != y_train)
+tree_test_error <- mean(tree_test_pred != y_test)
+```
+
+
+
+### (ii) Ensemble of bagged trees
+
+[TBD]
+
+```{r}
+bagged_model <- randomForest(diabetes ~ ., data = train, mtry = ncol(X_train))
+
+# Predict and compute errors
+bagged_train_pred <- predict(bagged_model, train)
+bagged_test_pred <- predict(bagged_model, test)
+bagged_train_error <- mean(bagged_train_pred != y_train)
+bagged_test_error <- mean(bagged_test_pred != y_test)
+```
+
+
+### (iii) Random Forest
+
+[TBD]
+
+```{r}
+rf_model <- randomForest(diabetes ~ ., data = train)
+
+# Predict and compute errors
+rf_train_pred <- predict(rf_model, train)
+rf_test_pred <- predict(rf_model, test)
+rf_train_error <- mean(rf_train_pred != y_train)
+rf_test_error <- mean(rf_test_pred != y_test)
+```
+
+
+
 
