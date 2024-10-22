@@ -1,11 +1,11 @@
 ---
 title: "assignment_2"
 output:
-  html_document:
-    df_print: paged
+  pdf_document: 
     toc: true
     toc_depth: 3
-  pdf_document: 
+  html_document:
+    df_print: paged
     toc: true
     toc_depth: 3
 date: "2024-10-16"
@@ -224,57 +224,53 @@ ggplot(combined_data, aes(x = LC50, y = predicted_LC50, color = Type)) +
   theme(legend.position = "bottom")
 ```
 
+
 ```{r}
 # Prepare combined data
 train_combined <- train_i[, c("LC50", "predicted_LC50")]
 train_combined$Method <- 'Original'
 train_combined$Type <- 'Train'
 train_ii_combined <- train_ii[, c("LC50", "predicted_LC50")]
-train_ii_combined$Method <- 'Dummy Encoding'
+train_ii_combined$Method <- 'Dummy'
 train_ii_combined$Type <- 'Train'
 train_combined_all <- rbind(train_combined, train_ii_combined)
-
 test_combined <- test_i[, c("LC50", "predicted_LC50")]
 test_combined$Method <- 'Original'
 test_combined$Type <- 'Test'
 test_ii_combined <- test_ii[, c("LC50", "predicted_LC50")]
-test_ii_combined$Method <- 'Dummy Encoding'
+test_ii_combined$Method <- 'Dummy'
 test_ii_combined$Type <- 'Test'
 test_combined_all <- rbind(test_combined, test_ii_combined)
-
 # Convert 'Method' and 'Type' to factors
-train_combined_all$Method <- factor(train_combined_all$Method, levels = c('Original', 'Dummy Encoding'))
-test_combined_all$Method <- factor(test_combined_all$Method, levels = c('Original', 'Dummy Encoding'))
-
+train_combined_all$Method <- factor(train_combined_all$Method, levels = c('Original', 'Dummy'))
+test_combined_all$Method <- factor(test_combined_all$Method, levels = c('Original', 'Dummy'))
 # Function to draw regression lines
 add_regression_lines <- function(df, original_model, dummy_model) {
-  ggplot(df, aes(x = LC50, y = predicted_LC50, color = Method)) +
-    geom_point(alpha = 0.7) +
-    geom_smooth(method = "lm", formula = y ~ x, se = FALSE, 
-                aes(linetype = Method), 
-                data = df[df$Method == 'Original', ], 
-                color = 'blue') +
-    geom_smooth(method = "lm", formula = y ~ x, se = FALSE, 
-                aes(linetype = Method), 
-                data = df[df$Method == 'Dummy', ], 
-                color = 'red') +
-    geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
-    labs(x = "Observed LC50", y = "Predicted LC50", title = df$Type[1]) +
-    theme_minimal() +
-    theme(legend.position = "bottom")
+ggplot(df, aes(x = LC50, y = predicted_LC50, color = Method)) +
+geom_point(alpha = 0.7) +
+geom_smooth(method = "lm", formula = y ~ x, se = FALSE,
+aes(linetype = Method),
+data = df[df$Method == 'Original', ],
+color = 'blue') +
+geom_smooth(method = "lm", formula = y ~ x, se = FALSE,
+aes(linetype = Method),
+data = df[df$Method == 'Dummy', ],
+color = 'red') +
+geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+labs(x = "Observed LC50", y = "Predicted LC50", title = df$Type[1]) +
+theme_minimal() +
+theme(legend.position = "bottom")
 }
-
 # Plot training data with both regression lines
 train_plot <- add_regression_lines(train_combined_all, model, model_transform_dummy)
 train_plot <- train_plot + labs(title = "Training Data")
-
 # Plot testing data with both regression lines
 test_plot <- add_regression_lines(test_combined_all, model, model_transform_dummy)
 test_plot <- test_plot + labs(title = "Testing Data")
-
 # Display plots side by side
 grid.arrange(train_plot, test_plot, ncol = 2)
 ```
+
 
 ## b. Repeating the procedure 200 times
 
@@ -842,6 +838,8 @@ ex_storage
 
 
 ```{r}
+# Reference: https://daviddalpiaz.github.io/r4sl/k-nearest-neighbors.html
+
 # plot accuracy vs choice of k
 plot(acc_k, type = "b", col = "dodgerblue", cex = 1, pch = 20, 
      xlab = "k, number of neighbors", ylab = "classification accuracy",
@@ -959,18 +957,48 @@ gam_model <- gam(
 summary(gam_model)
 ```
 
+
 ```{r}
-# Plot the estimated smooth terms
-plot(gam_model, pages = 1, scale = 0)
+p_obj <- plot(gam_model, residuals = TRUE, pages = 1, scale = 0)
+p_obj <- p_obj[[1]] # just one smooth so select the first component
+sm_df <- as.data.frame(p_obj[c("x", "se", "fit")])
+data_df <- as.data.frame(p_obj[c("raw", "p.resid")])
+
+## plot
+ggplot(sm_df, aes(x = x, y = fit)) +
+  geom_rug(data = data_df, mapping = aes(x = raw, y = NULL),
+           sides = "b") +
+  geom_point(data = data_df, mapping = aes(x = raw, y = p.resid)) +
+  geom_ribbon(aes(ymin = fit - se, ymax = fit + se, y = NULL),
+              alpha = 0.3) +
+  geom_line() +
+  labs(x = p_obj$xlab, y = p_obj$ylab)
 ```
+
 
 [TBD] add variable selection step
 
 ## c. Tree-based methods
 
-```{r, results='hide', warning=FALSE}
-library(rpart)
-library(randomForest)
+Setting up the k-fold cross validation k = 10 cross-validation folds.
+Reference: https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html
+
+```{r}
+library(rpart)  #for trees
+library(rpart.plot)             # Enhanced tree plots
+library(RColorBrewer)       # Color selection for fancy tree plot
+library(party)                  # Alternative decision tree algorithm
+library(partykit)               # Convert rpart object to BinaryTree
+library(pROC)   #for ROC curves
+```
+
+
+```{r}
+set.seed(1234)
+
+#setting up cross-validation
+cvcontrol <- trainControl(method="repeatedcv", number = 10,
+                          allowParallel=TRUE)
 ```
 
 
@@ -979,13 +1007,12 @@ library(randomForest)
 [TBD]
 
 ```{r}
-tree_model <- rpart(diabetes ~ ., data = train, method = "class")
-
-# Predict and compute errors
-tree_train_pred <- predict(tree_model, train, type = "class")
-tree_test_pred <- predict(tree_model, test, type = "class")
-tree_train_error <- mean(tree_train_pred != y_train)
-tree_test_error <- mean(tree_test_pred != y_test)
+train.tree <- train(as.factor(diabetes) ~ ., 
+                   data=train,
+                   method="ctree",
+                   trControl=cvcontrol,
+                   tuneLength = 10)
+train.tree
 ```
 
 
@@ -995,13 +1022,7 @@ tree_test_error <- mean(tree_test_pred != y_test)
 [TBD]
 
 ```{r}
-bagged_model <- randomForest(diabetes ~ ., data = train, mtry = ncol(X_train))
 
-# Predict and compute errors
-bagged_train_pred <- predict(bagged_model, train)
-bagged_test_pred <- predict(bagged_model, test)
-bagged_train_error <- mean(bagged_train_pred != y_train)
-bagged_test_error <- mean(bagged_test_pred != y_test)
 ```
 
 
@@ -1010,13 +1031,7 @@ bagged_test_error <- mean(bagged_test_pred != y_test)
 [TBD]
 
 ```{r}
-rf_model <- randomForest(diabetes ~ ., data = train)
 
-# Predict and compute errors
-rf_train_pred <- predict(rf_model, train)
-rf_test_pred <- predict(rf_model, test)
-rf_train_error <- mean(rf_train_pred != y_train)
-rf_test_error <- mean(rf_test_pred != y_test)
 ```
 
 
