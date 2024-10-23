@@ -1,11 +1,11 @@
 ---
 title: "assignment_2"
 output:
-  pdf_document: 
-    toc: true
-    toc_depth: 3
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+  pdf_document: 
     toc: true
     toc_depth: 3
 date: "2024-10-16"
@@ -527,12 +527,20 @@ y_test <- test$LC50
 
 ### Cross Validation
 
+
 ```{r}
-# Define a grid of candidate lambda values
+# Reference: https://bookdown.org/ssjackson300/Machine-Learning-Lecture-Notes/choosing-lambda.html
+
+# Define a grid of lambda values
 lambda_grid <- 10^seq(10, -2, length = 100)
 
 # Perform cross-validation for ridge regression
-cv_ridge <- cv.glmnet(x_train, y_train, alpha = 0, lambda = lambda_grid, standardize = TRUE)
+cv_ridge <- cv.glmnet(x_train, 
+                      y_train, 
+                      alpha = 0, 
+                      lambda = lambda_grid, 
+                      standardize = TRUE
+                      )
 best_lambda_cv <- cv_ridge$lambda.min
 print(paste("Best Lambda from Cross-Validation:", best_lambda_cv))
 
@@ -543,29 +551,45 @@ print(paste("Test MSE for Ridge Regression (Cross-Validation):", mse_cv))
 ```
 
 
+```{r}
+plot(cv_ridge)
+```
+
+
 ### Bootstrap Procedure
 
+
 ```{r}
+# Reference: https://pages.stat.wisc.edu/~kdlevin/teaching/Fall2022/STAT340/lecs/L13_bootstrap.html
+
+
 # Define ridge regression function for bootstrap
-ridge_bootstrap <- function(dataset, indices, lambda) {
-  d <- dataset[indices, ]  # subset data
-  x_boot <- as.matrix(d[, -9])
-  y_boot <- d$LC50
-  ridge_model <- glmnet(x_boot, y_boot, alpha = 0, lambda = lambda, standardize = TRUE)
-  return(ridge_model)
+ridge_bootstrap <- function(data, lambda, B = 100) {
+  n <- nrow(data)  # number of observations
+  boot_mses <- numeric(B)
+  
+  for (i in 1:B) {
+    resample_indices <- sample(1:n, n, replace = TRUE)
+    
+    # resampled_data <- fin_pairs[resample_indices,] fin_pairs = [X, Y]
+    resampled_data <- data[resample_indices, ]
+    
+    x_boot <- as.matrix(resampled_data[, -9])
+    y_boot <- resampled_data$LC50
+    
+    # Apply ridge regression and predict in this resampling data set
+    ridge_model <- glmnet(x_boot, y_boot, alpha = 0, lambda = lambda, standardize = TRUE)
+    boot_pred <- predict(ridge_model, s = lambda, newx = as.matrix(data[, -9]))
+    boot_mses[i] <- mean((boot_pred - data$LC50)^2)
+  }
+  
+  return(mean(boot_mses))
 }
 
-# Bootstrap procedure
-set.seed(123)
-num_bootstraps <- 100
+# Perform bootstrap for ridge regression
+set.seed(1)
 boot_results <- sapply(lambda_grid, function(lambda) {
-  boot_mses <- replicate(num_bootstraps, {
-    sample_indices <- sample(1:nrow(train), replace = TRUE)
-    ridge_model <- ridge_bootstrap(train, sample_indices, lambda)
-    boot_pred <- predict(ridge_model, s = lambda, newx = x_test)
-    mean((boot_pred - y_test)^2)
-  })
-  mean(boot_mses)
+  ridge_bootstrap(train, lambda, B = 100)
 })
 
 # Find the optimal lambda
@@ -576,7 +600,9 @@ print(paste("Best Lambda from Bootstrap:", best_lambda_bootstrap))
 ridge_pred_bootstrap <- predict(cv_ridge, s = best_lambda_bootstrap, newx = x_test)
 mse_bootstrap <- mean((ridge_pred_bootstrap - y_test)^2)
 print(paste("Test MSE for Ridge Regression (Bootstrap):", mse_bootstrap))
+
 ```
+
 
 ### Cross Validation vs Bootstrap Comparision
 
@@ -591,7 +617,9 @@ comparison_df <- data.frame(
 # Plot the results
 ggplot(comparison_df, aes(x = log(Lambda), y = MSE, color = Method)) +
   geom_line() +
-  labs(title = "Ridge Regression: Cross-Validation vs Bootstrap", x = "Log(Lambda)", y = "Mean Squared Error") +
+  labs(title = "Ridge Regression: Cross-Validation vs Bootstrap",
+       x = "Log(Lambda)",
+       y = "Mean Squared Error") +
   theme_minimal()
 
 ```
@@ -725,6 +753,15 @@ cat(paste0(
 ## g. Compare all the models implemented
 
 [TBD]
+
+1. Orginal Model
+Regression model by Dummy Enconding Method
+
+model mse_test, rmse_test
+model_transform_dummy mse_test_transform_dummy
+
+mse_bootstrap
+
 
 # Problem 2. Classification
 
@@ -952,14 +989,28 @@ gam_model <- gam(
       diabetes ~ s(glucose) + s(pressure) + s(insulin) + s(mass) + s(pedigree) + s(age) + s(pregnant), 
       data = train,
       family = binomial(link = 'logit'),
-      select = TRUE)
-
-summary(gam_model)
+      select = TRUE,
+      method= "REML")
 ```
 
+In the `summary(model)` output, the Approximate significance of smooth terms table shows an estimated degrees of freedom (edf) and Chi square score (Chi.sq) close to zero, with a p-value > 0.05:
 
 ```{r}
-p_obj <- plot(gam_model, residuals = TRUE, pages = 1, scale = 0)
+summary(gam_model)
+```
+Reference: https://osf.io/wgc4f/wiki/mgcv:%20model%20selection/
+
+[TBD] You can use these statistics to detect a shrunk term. It is usually sufficient to check for p-values > 0.05:
+
+```{r}
+summary(gam_model)$s.pv
+```
+
+We can see that the glucose and pedigree is a shrunk term
+
+```{r}
+p_obj <- plot(gam_model, residuals = TRUE)
+
 p_obj <- p_obj[[1]] # just one smooth so select the first component
 sm_df <- as.data.frame(p_obj[c("x", "se", "fit")])
 data_df <- as.data.frame(p_obj[c("raw", "p.resid")])
@@ -976,35 +1027,31 @@ ggplot(sm_df, aes(x = x, y = fit)) +
 ```
 
 
-[TBD] add variable selection step
-
 ## c. Tree-based methods
 
 Setting up the k-fold cross validation k = 10 cross-validation folds.
 Reference: https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html
 
 ```{r}
-library(rpart)  #for trees
+library(rpart)                  # For trees
 library(rpart.plot)             # Enhanced tree plots
-library(RColorBrewer)       # Color selection for fancy tree plot
 library(party)                  # Alternative decision tree algorithm
 library(partykit)               # Convert rpart object to BinaryTree
-library(pROC)   #for ROC curves
+library(pROC)                   # For ROC curves
 ```
 
 
 ```{r}
 set.seed(1234)
 
-#setting up cross-validation
-cvcontrol <- trainControl(method="repeatedcv", number = 10,
+# Setting up cross-validation
+cvcontrol <- trainControl(method="repeatedcv",
+                          number = 10,
                           allowParallel=TRUE)
 ```
 
 
 ### (i) Classification tree
-
-[TBD]
 
 ```{r}
 train.tree <- train(as.factor(diabetes) ~ ., 
@@ -1015,25 +1062,173 @@ train.tree <- train(as.factor(diabetes) ~ .,
 train.tree
 ```
 
+```{r}
+plot(train.tree)
+```
+
+
+```{r}
+plot(train.tree$finalModel)
+```
+
+
+```{r}
+# obtaining class predictions for training
+tree.classTrain <-  predict(train.tree, type="raw")
+
+# Check accuracy and confusion matrix for training set
+confusionMatrix(train$diabetes, tree.classTrain)
+```
+
+
+Accuracy of training set is 86.64%
+
+```{r}
+# Obtaining class predictions for test set
+tree.classTest <-  predict(train.tree,
+                           newdata = test,
+                           type="raw")
+
+# Check accuracy and confusion matrix for training set
+confusionMatrix(test$diabetes, tree.classTest)
+```
+
+
+
+
+Accuracy of test set is 76.15%
+
+```{r}
+#Obtaining predicted probabilites for Test data
+tree.probs=predict(train.tree,
+                 newdata=test,
+                 type="prob")
+
+#Calculate ROC curve
+rocCurve.tree <- roc(test$diabetes,tree.probs[,"neg"])
+
+#plot the ROC curve
+plot(rocCurve.tree,col=c(4))
+
+#calculate the area under curve (bigger is better)
+auc(rocCurve.tree)
+```
 
 
 ### (ii) Ensemble of bagged trees
 
-[TBD]
 
 ```{r}
+#Using treebag 
+train.bagg <- train(as.factor(diabetes) ~ ., 
+                   data=train,
+                   method="treebag",
+                   trControl=cvcontrol,
+                   importance=TRUE)
 
+train.bagg
+```
+
+
+```{r}
+plot(varImp(train.bagg))
+```
+
+
+```{r}
+#obtaining class predictions
+bagg.classTrain <-  predict(train.bagg, type="raw")
+
+confusionMatrix(train$diabetes, bagg.classTrain)
+
+```
+
+```{r}
+bagg.classTest <-  predict(train.bagg, 
+                         newdata = test,
+                          type="raw")
+
+confusionMatrix(test$diabetes, bagg.classTest)
+
+```
+
+```{r}
+#Obtaining predicted probabilities for Test data
+bagg.probs=predict(train.bagg,
+                 newdata=test,
+                 type="prob")
+
+#Calculate ROC curve
+rocCurve.bagg <- roc(test$diabetes, bagg.probs[,"neg"])
+
+#plot the ROC curve
+plot(rocCurve.bagg,col=c(4))
+
+#calculate the area under curve (bigger is better)
+auc(rocCurve.bagg)
 ```
 
 
 ### (iii) Random Forest
 
-[TBD]
 
 ```{r}
+#Using treebag 
+train.rf <- train(as.factor(diabetes) ~ ., 
+                   data=train,
+                   method="rf",
+                   trControl=cvcontrol,
+                   importance=TRUE)
+
+train.rf
+```
+
+```{r}
+#obtaining class predictions
+rf.classTrain <-  predict(train.rf, type="raw")
+
+confusionMatrix(train$diabetes, rf.classTrain)
 
 ```
 
+```{r}
+rf.classTest <-  predict(train.rf, 
+                         newdata = test,
+                          type="raw")
 
+confusionMatrix(test$diabetes, rf.classTest)
+
+```
+
+```{r}
+#Obtaining predicted probabilities for Test data
+rf.probs=predict(train.rf,
+                 newdata=test,
+                 type="prob")
+
+#Calculate ROC curve
+rocCurve.rf <- roc(test$diabetes, rf.probs[,"neg"])
+
+#plot the ROC curve
+plot(rocCurve.rf,col=c(4))
+
+#calculate the area under curve (bigger is better)
+auc(rocCurve.rf)
+```
+
+### Tree-based models comparision
+
+```{r}
+plot(rocCurve.tree,col=c(4))
+plot(rocCurve.bagg,add=TRUE,col=c(6)) # color magenta is bagg
+plot(rocCurve.rf,add=TRUE,col=c(1)) # color black is rf
+```
+
+
+## d. Neural Network
+
+
+
+## e. Compare all models
 
 
