@@ -1,18 +1,17 @@
 ---
 title: "assignment_2"
 output:
-  html_document:
-    df_print: paged
+  pdf_document: 
     toc: true
     toc_depth: 3
-  pdf_document: 
+  html_document:
+    df_print: paged
     toc: true
     toc_depth: 3
 date: "2024-10-16"
 editor_options:
   chunk_output_type: inline
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -47,7 +46,7 @@ names(data) <- c(
 head(data)
 ```
 
-## a. Dataset spliting
+## a. Dataset splitting
 
 Split the data into a training and a test set, with approximately 2/3 and 1/3 of the observations, respectively.
 
@@ -63,7 +62,7 @@ test   <- subset(data, sample == FALSE)
 cat("Dimension of Training Set:", paste(dim(train), collapse = "x"), "\nDimension of Test Set:", paste(dim(test), collapse = "x"), "\n")
 ```
 
-### (i) Orginal Model
+### (i) Original Model
 
 Model each of them directly as a linear effect
 
@@ -71,7 +70,6 @@ Model each of them directly as a linear effect
 train_i = train
 test_i = test
 ```
-
 
 ```{r}
 # Fit linear regression model on training data
@@ -157,7 +155,6 @@ test_ii$nN <- ifelse(test_ii$nN > 0, 1, 0)
 test_ii$C040 <- ifelse(test_ii$C040 > 0, 1, 0)
 ```
 
-
 ```{r}
 head(train_ii)
 ```
@@ -224,7 +221,6 @@ ggplot(combined_data, aes(x = LC50, y = predicted_LC50, color = Type)) +
   theme(legend.position = "bottom")
 ```
 
-
 ```{r}
 # Prepare combined data
 train_combined <- train_i[, c("LC50", "predicted_LC50")]
@@ -271,17 +267,15 @@ test_plot <- test_plot + labs(title = "Testing Data")
 grid.arrange(train_plot, test_plot, ncol = 2)
 ```
 
-
 ## b. Repeating the procedure 200 times
 
 Procedure
 
-  - Randomly spiting training/test (70%/30%).
-  
-  - Fit the models with 2 options (i) Original model and (ii) Dummy encoding.
-  
-  - Record the test errors (MSE/RMSE/$R^2$).
+-   Randomly spiting training/test (70%/30%).
 
+-   Fit the models with 2 options (i) Original model and (ii) Dummy encoding.
+
+-   Record the test errors (MSE/RMSE/$R^2$).
 
 ```{r}
 # Initialize vectors to store test errors
@@ -337,10 +331,9 @@ Make a plot that illustrates the empirical distributions of the test error for e
 
 Initials insight:
 
-- Method 1: performs better in term of MSE
+-   Method 1: performs better in term of MSE
 
-- Method 2: better in reduce over fitting
-
+-   Method 2: better in reduce over fitting
 
 ```{r}
 # Calculate and print average test errors
@@ -395,7 +388,6 @@ ggplot(errors_df, aes(x = Error, fill = Model)) +
   theme_minimal()
 ```
 
-
 ```{r}
 # Plot the empirical distributions of the test errors using boxplots
 ggplot(errors_df, aes(x = Metric, y = Error, fill = Model)) +
@@ -424,7 +416,6 @@ null.model <- lm(LC50 ~ 1, data = train)
 y <- train$LC50
 num_vars <- ncol(train) - 1  # exclude the response variable column
 ```
-
 
 ### Forward Selection
 
@@ -463,7 +454,6 @@ summary(model.stepwise.aic)
 model.stepwise.bic <- stepAIC(null.model, scope = list(lower = null.model, upper = full.model), direction = 'both', k = log(nrow(train)), trace = FALSE)
 summary(model.stepwise.bic)
 ```
-
 
 ### Model Comparison
 
@@ -527,7 +517,6 @@ y_test <- test$LC50
 
 ### Cross Validation
 
-
 ```{r}
 # Reference: https://bookdown.org/ssjackson300/Machine-Learning-Lecture-Notes/choosing-lambda.html
 
@@ -547,17 +536,22 @@ print(paste("Best Lambda from Cross-Validation:", best_lambda_cv))
 # Predict and evaluate on test data
 ridge_pred_cv <- predict(cv_ridge, s = best_lambda_cv, newx = x_test)
 mse_cv <- mean((ridge_pred_cv - y_test)^2)
-print(paste("Test MSE for Ridge Regression (Cross-Validation):", mse_cv))
-```
+rmse_cv <- sqrt(mse_cv)
+r2_cv <- 1 - (sum((ridge_pred_cv - y_test)^2) / sum((y_test - mean(y_test))^2))
 
+cat(paste0(
+  "MSE: ", mse_cv, "\n",
+  "RMSE (Test): ", rmse_cv, "\n",
+  "R-squared (Test): ", r2_cv, "\n"
+))
+
+```
 
 ```{r}
 plot(cv_ridge)
 ```
 
-
 ### Bootstrap Procedure
-
 
 ```{r}
 # Reference: https://pages.stat.wisc.edu/~kdlevin/teaching/Fall2022/STAT340/lecs/L13_bootstrap.html
@@ -599,10 +593,16 @@ print(paste("Best Lambda from Bootstrap:", best_lambda_bootstrap))
 # Predict and evaluate on test data
 ridge_pred_bootstrap <- predict(cv_ridge, s = best_lambda_bootstrap, newx = x_test)
 mse_bootstrap <- mean((ridge_pred_bootstrap - y_test)^2)
-print(paste("Test MSE for Ridge Regression (Bootstrap):", mse_bootstrap))
+rmse_bootstrap <- sqrt(mse_bootstrap)
+r2_bootstrap <- 1 - (sum((ridge_pred_bootstrap - y_test)^2) / sum((y_test - mean(y_test))^2))
+
+cat(paste0(
+  "MSE: ", mse_bootstrap, "\n",
+  "RMSE (Test): ", rmse_bootstrap, "\n",
+  "R-squared (Test): ", r2_bootstrap, "\n"
+))
 
 ```
-
 
 ### Cross Validation vs Bootstrap Comparision
 
@@ -624,12 +624,12 @@ ggplot(comparison_df, aes(x = log(Lambda), y = MSE, color = Method)) +
 
 ```
 
-
 ## e. Generalised Additive Model (GAM)
 
 ```{r}
 summary(train)
 ```
+
 ### Lower Complexity (k = 4)
 
 ```{r}
@@ -660,7 +660,6 @@ ggplot(sm_df, aes(x = x, y = fit)) +
   geom_line() +
   labs(x = p_obj$xlab, y = p_obj$ylab)
 ```
-
 
 ```{r}
 gam_pred_1 <- predict(gam_model_1, newdata = test)
@@ -734,8 +733,6 @@ pruned_tree <- prune(tree_model, cp = optimal_cp)
 rpart.plot(pruned_tree, main = "Pruned Regression Tree")
 ```
 
-
-
 ```{r}
 # Predict and evaluate on test data
 tree_pred <- predict(pruned_tree, newdata = test)
@@ -754,14 +751,63 @@ cat(paste0(
 
 [TBD]
 
-1. Orginal Model
-Regression model by Dummy Enconding Method
+-   Linear Regression (Original)
+-   Linear Regression model by Dummy Encoding Method (Dummy Encoding)
+-   Ridge Regression with Cross Validation (Ridge CV)
+-   Ridge Regression with Bootstrapping ("Ridge Bootstrap")
+-   Generalized Additive Model with lower complexity (GAM k=4)
+-   Generalized Additive Model with higher complexity (GAM k=6)
+-   Regression Tree with Cost-Complexity Pruning (Tree)
 
-model mse_test, rmse_test
-model_transform_dummy mse_test_transform_dummy
+```{r}
+# Create a comprehensive metrics data frame
+all_models_metrics <- data.frame(
+  Model = c("Original", "Dummy Encoding", "Variable Selection", "Ridge CV", "Ridge Bootstrap", "GAM k=4", "GAM k=6", "Tree"),
+  MSE = c(mse_test, mse_test_transform_dummy, metrics$MSE[metrics$Model == "Forward AIC"], mse_cv, mse_bootstrap, gam_mse_1, 
+          gam_mse_2, tree_mse),
+  RMSE = c(rmse_test, rmse_test_transform_dummy, metrics$RMSE[metrics$Model == "Forward AIC"], rmse_cv, rmse_bootstrap, gam_rmse_1, 
+           gam_rmse_2, tree_rmse),
+  R2 = c(r2_test, r2_test_transform_dummy, metrics$R2[metrics$Model == "Forward AIC"], r2_cv, r2_bootstrap, gam_r2_1, 
+         gam_r2_2, tree_r2)
+)
 
-mse_bootstrap
+# Print the all models metrics
+print(all_models_metrics)
 
+```
+
+```{r}
+## Visualization of Model Comparisons
+
+# Identify the model with the minimum MSE, RMSE and maximum R-squared
+best_mse_model <- all_models_metrics$Model[which.min(all_models_metrics$MSE)]
+best_rmse_model <- all_models_metrics$Model[which.min(all_models_metrics$RMSE)]
+best_r2_model <- all_models_metrics$Model[which.max(all_models_metrics$R2)]
+
+# Plot MSE across selected models
+ggplot(all_models_metrics, aes(x = Model, y = MSE, fill = Model == best_mse_model)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("gray", "dodgerblue"), guide = "none") +
+  theme_minimal() +
+  labs(title = "MSE Across Selected Models", x = "Model", y = "MSE", fill = "Best Model") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot RMSE across selected models
+ggplot(all_models_metrics, aes(x = Model, y = RMSE, fill = Model == best_mse_model)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("gray", "dodgerblue"), guide = "none") +
+  theme_minimal() +
+  labs(title = "RMSE Across Selected Models", x = "Model", y = "RMSE", fill = "Best Model") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot RMSE across selected models
+ggplot(all_models_metrics, aes(x = Model, y = MSE, fill = Model == best_mse_model)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("gray", "dodgerblue"), guide = "none") +
+  theme_minimal() +
+  labs(title = "R^2 Across Selected Models", x = "Model", y = "R2", fill = "Best Model") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 # Problem 2. Classification
 
@@ -769,7 +815,6 @@ mse_bootstrap
 library(mlbench)
 data("PimaIndiansDiabetes2")
 ```
-
 
 ```{r}
 data <- PimaIndiansDiabetes2
@@ -781,13 +826,11 @@ head(data)
 sapply(data, function(x) sum(is.na(x)))
 ```
 
-
 ```{r}
 # Remove rows with missing values
 data <- na.omit(data)
 head(data)
 ```
-
 
 ```{r}
 summary(data)
@@ -807,7 +850,6 @@ sample <- sample.split(data$diabetes, SplitRatio = 2/3)
 train <- subset(data, sample == TRUE)
 test <- subset(data, sample == FALSE)
 ```
-
 
 ```{r}
 # Class distribution in the training set
@@ -829,7 +871,6 @@ library(caret)
 library(FNN)
 ```
 
-
 ```{r}
 X_train <- train[, -ncol(train)]
 y_train <- train$diabetes
@@ -837,7 +878,6 @@ y_train <- train$diabetes
 X_test <- test[, -ncol(test)]
 y_test <- test$diabetes
 ```
-
 
 ```{r}
 accuracy = function(actual, predicted) {
@@ -860,7 +900,6 @@ for (i in seq_along(k_to_try)) {
 }
 ```
 
-
 ```{r}
 ex_seq = seq(from = 1, to = 100, by = 5)
 seq_along(ex_seq)
@@ -872,7 +911,6 @@ for(i in seq_along(ex_seq)) {
 
 ex_storage
 ```
-
 
 ```{r}
 # Reference: https://daviddalpiaz.github.io/r4sl/k-nearest-neighbors.html
@@ -893,11 +931,9 @@ abline(h = mean(y_test == "No"), col = "grey", lty = 2)
 max(acc_k)
 ```
 
-
 ```{r}
 max(which(acc_k == max(acc_k)))
 ```
-
 
 ### Using 5-fold
 
@@ -914,7 +950,7 @@ train_knn <- train(diabetes ~ .,
 
 cv_results <- train_knn$results
 
-cv_results
+head(cv_results)
 
 ```
 
@@ -932,11 +968,9 @@ abline(v = cv_results$k[which.max(cv_results$Accuracy)], col = "darkorange", lwd
 abline(h = max(cv_results$Accuracy), col = "grey", lty = 2)
 ```
 
-
 ```{r}
 max(cv_results$Accuracy)
 ```
-
 
 ```{r}
 cv_results$k[which.max(cv_results$Accuracy)]
@@ -955,7 +989,7 @@ train_knn_loocv <- train(diabetes ~ .,
 
 cv_results_loocv <- train_knn_loocv$results
 
-cv_results_loocv
+head(cv_results_loocv)
 ```
 
 ```{r}
@@ -971,17 +1005,15 @@ abline(v = cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)], col = "dark
 abline(h = max(cv_results_loocv$Accuracy), col = "grey", lty = 2)
 ```
 
-
 ```{r}
 max(cv_results_loocv$Accuracy)
 ```
-
 
 ```{r}
 cv_results$k[which.max(cv_results_loocv$Accuracy)]
 ```
 
-## b. Generalised Additive Model (GAM)
+## b. Generalized Additive Model (GAM)
 
 ```{r}
 # Fit a GAM with automatic smoothness selection
@@ -993,14 +1025,15 @@ gam_model <- gam(
       method= "REML")
 ```
 
-In the `summary(model)` output, the Approximate significance of smooth terms table shows an estimated degrees of freedom (edf) and Chi square score (Chi.sq) close to zero, with a p-value > 0.05:
+In the `summary(model)` output, the Approximate significance of smooth terms table shows an estimated degrees of freedom (edf) and Chi square score (Chi.sq) close to zero, with a p-value \> 0.05:
 
 ```{r}
 summary(gam_model)
 ```
-Reference: https://osf.io/wgc4f/wiki/mgcv:%20model%20selection/
 
-[TBD] You can use these statistics to detect a shrunk term. It is usually sufficient to check for p-values > 0.05:
+Reference: <https://osf.io/wgc4f/wiki/mgcv:%20model%20selection/>
+
+[TBD] You can use these statistics to detect a shrunk term. It is usually sufficient to check for p-values \> 0.05:
 
 ```{r}
 summary(gam_model)$s.pv
@@ -1026,11 +1059,9 @@ ggplot(sm_df, aes(x = x, y = fit)) +
   labs(x = p_obj$xlab, y = p_obj$ylab)
 ```
 
-
 ## c. Tree-based methods
 
-Setting up the k-fold cross validation k = 10 cross-validation folds.
-Reference: https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html
+Setting up the k-fold cross validation k = 10 cross-validation folds. Reference: <https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html>
 
 ```{r}
 library(rpart)                  # For trees
@@ -1040,7 +1071,6 @@ library(partykit)               # Convert rpart object to BinaryTree
 library(pROC)                   # For ROC curves
 ```
 
-
 ```{r}
 set.seed(1234)
 
@@ -1049,7 +1079,6 @@ cvcontrol <- trainControl(method="repeatedcv",
                           number = 10,
                           allowParallel=TRUE)
 ```
-
 
 ### (i) Classification tree
 
@@ -1066,11 +1095,9 @@ train.tree
 plot(train.tree)
 ```
 
-
 ```{r}
 plot(train.tree$finalModel)
 ```
-
 
 ```{r}
 # obtaining class predictions for training
@@ -1079,7 +1106,6 @@ tree.classTrain <-  predict(train.tree, type="raw")
 # Check accuracy and confusion matrix for training set
 confusionMatrix(train$diabetes, tree.classTrain)
 ```
-
 
 Accuracy of training set is 86.64%
 
@@ -1092,9 +1118,6 @@ tree.classTest <-  predict(train.tree,
 # Check accuracy and confusion matrix for training set
 confusionMatrix(test$diabetes, tree.classTest)
 ```
-
-
-
 
 Accuracy of test set is 76.15%
 
@@ -1114,9 +1137,7 @@ plot(rocCurve.tree,col=c(4))
 auc(rocCurve.tree)
 ```
 
-
 ### (ii) Ensemble of bagged trees
-
 
 ```{r}
 #Using treebag 
@@ -1129,11 +1150,9 @@ train.bagg <- train(as.factor(diabetes) ~ .,
 train.bagg
 ```
 
-
 ```{r}
 plot(varImp(train.bagg))
 ```
-
 
 ```{r}
 #obtaining class predictions
@@ -1168,9 +1187,7 @@ plot(rocCurve.bagg,col=c(4))
 auc(rocCurve.bagg)
 ```
 
-
 ### (iii) Random Forest
-
 
 ```{r}
 #Using treebag 
@@ -1224,11 +1241,42 @@ plot(rocCurve.bagg,add=TRUE,col=c(6)) # color magenta is bagg
 plot(rocCurve.rf,add=TRUE,col=c(1)) # color black is rf
 ```
 
-
 ## d. Neural Network
 
+```{r}
+library(tidyverse)
+library(neuralnet)
+```
 
+```{r}
+nn_model = neuralnet(
+    diabetes~.,
+data=train,
+hidden=c(16,8,2),
+linear.output = FALSE
+)
+```
+
+```{r}
+plot(nn_model,rep = "best")
+```
+
+```{r}
+pred <- predict(nn_model, test)
+labels <- c("neg","pos")
+
+prediction_label <- data.frame(max.col(pred)) %>%     
+mutate(pred=labels[max.col.pred.]) %>%
+select(2) %>%
+unlist()
+
+table(test$diabetes, prediction_label)
+```
+
+```{r}
+check = as.numeric(test$diabetes) == max.col(pred)
+accuracy = (sum(check)/nrow(test))*100
+print(accuracy)
+```
 
 ## e. Compare all models
-
-
