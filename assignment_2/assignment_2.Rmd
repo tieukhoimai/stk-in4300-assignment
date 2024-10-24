@@ -24,11 +24,11 @@ library(glmnet)
 library(boot)
 library(mgcv)
 library(rpart)
-library(rpart.plot)             # Enhanced tree plots
-library(RColorBrewer)       # Color selection for fancy tree plot
-library(party)                  # Alternative decision tree algorithm
-library(partykit)               # Convert rpart object to BinaryTree
-library(pROC)   #for ROC curves
+library(rpart.plot)             
+library(RColorBrewer)       
+library(party)                  
+library(partykit)               
+library(pROC)   
 ```
 
 # Problem 1. Regression
@@ -50,7 +50,7 @@ names(data) <- c(
 head(data)
 ```
 
-## a. Dataset splitting
+## a. Data splitting
 
 Split the data into a training and a test set, with approximately 2/3 and 1/3 of the observations, respectively.
 
@@ -649,7 +649,7 @@ summary(gam_model_1)
 ```{r}
 # reference: https://stackoverflow.com/questions/67077306/plotting-output-of-gam-model
 
-p_obj <- plot(gam_model_1, residuals = TRUE, pages = 1, scale = 0)
+p_obj <- plot(gam_model_1, residuals = TRUE)
 p_obj <- p_obj[[1]] # just one smooth so select the first component
 sm_df <- as.data.frame(p_obj[c("x", "se", "fit")])
 data_df <- as.data.frame(p_obj[c("raw", "p.resid")])
@@ -691,7 +691,7 @@ summary(gam_model_2)
 ```
 
 ```{r}
-p_obj_2 <- plot(gam_model_2, residuals = TRUE, pages = 1, scale = 0)
+p_obj_2 <- plot(gam_model_2, residuals = TRUE)
 p_obj_2 <- p_obj_2[[1]] # just one smooth so select the first component
 sm_df_2 <- as.data.frame(p_obj_2[c("x", "se", "fit")])
 data_df_2 <- as.data.frame(p_obj_2[c("raw", "p.resid")])
@@ -1148,7 +1148,6 @@ cat("GAM - AUC:", auc_gam, "\n")
 plot(roc_curve_gam)
 ```
 
-
 ## c. Tree-based methods
 
 Setting up the k-fold cross validation k = 10 cross-validation folds. Reference: <https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html>
@@ -1191,6 +1190,7 @@ confusionMatrix(train$diabetes, tree.classTrain)
 
 Accuracy of training set is 86.64%
 
+
 ```{r}
 # Obtaining class predictions for test set
 tree.classTest <-  predict(train.tree,
@@ -1201,7 +1201,11 @@ tree.classTest <-  predict(train.tree,
 confusionMatrix(test$diabetes, tree.classTest)
 ```
 
-Accuracy of test set is 76.15%
+
+```{r}
+tree_accuracy <- mean(tree.classTest == test$diabetes)
+cat("Accuracy of Classification Tree:", tree_accuracy, "\n")
+```
 
 ```{r}
 #Obtaining predicted probabilites for Test data
@@ -1215,14 +1219,13 @@ rocCurve.tree <- roc(test$diabetes,tree.probs[,"neg"])
 #plot the ROC curve
 plot(rocCurve.tree,col=c(4))
 
-#calculate the area under curve (bigger is better)
+#calculate the area under curve
 auc(rocCurve.tree)
 ```
 
 ### (ii) Ensemble of bagged trees
 
 ```{r}
-#Using treebag 
 train.bagg <- train(as.factor(diabetes) ~ ., 
                    data=train,
                    method="treebag",
@@ -1246,12 +1249,19 @@ confusionMatrix(train$diabetes, bagg.classTrain)
 
 ```{r}
 bagg.classTest <-  predict(train.bagg, 
-                         newdata = test,
-                          type="raw")
+                           newdata = test,
+                           type="raw")
 
 confusionMatrix(test$diabetes, bagg.classTest)
-
 ```
+
+
+```{r}
+bagg_accuracy <- mean(bagg.classTest == test$diabetes)
+cat("Accuracy of Classification Tree:", bagg_accuracy, "\n")
+```
+
+
 
 ```{r}
 #Obtaining predicted probabilities for Test data
@@ -1300,6 +1310,12 @@ confusionMatrix(test$diabetes, rf.classTest)
 ```
 
 ```{r}
+rf_accuracy <- mean(bagg.classTest == test$diabetes)
+cat("Accuracy of Classification Tree:", rf_accuracy, "\n")
+```
+
+
+```{r}
 #Obtaining predicted probabilities for Test data
 rf.probs=predict(train.rf,
                  newdata=test,
@@ -1314,7 +1330,6 @@ plot(rocCurve.rf,col=c(4))
 #calculate the area under curve (bigger is better)
 auc(rocCurve.rf)
 ```
-
 
 ## d. Neural Network
 
@@ -1342,7 +1357,6 @@ X_test_nn_scaled <- scale(X_test_nn)
 train_combined <- cbind(X_train_nn_scaled, diabetes = y_train_nn)
 ```
 
-
 ```{r}
 nn_model = neuralnet(
     diabetes~.,
@@ -1364,20 +1378,19 @@ nn_pred_prob <- nn_pred$net.result
 # Convert probabilities to binary predictions
 nn_pred_class <- ifelse(nn_pred_prob > 0.5, 1, 0)
 ```
+
 ```{r}
 # Calculate and print confusion matrix
 conf_matrix <- table(Predicted = nn_pred_class, Actual = as.numeric(test$diabetes == "pos"))
 print(conf_matrix)
 ```
 
-
 ```{r}
 # Calculate accuracy
 check <- as.numeric(test$diabetes == "pos") == nn_pred_class
-accuracy <- (sum(check) / nrow(test)) * 100
-print(paste("Neural Network Test Accuracy:", accuracy))
+nn_accuracy <- (sum(check) / nrow(test)) 
+print(paste("Neural Network Test Accuracy:", nn_accuracy))
 ```
-
 
 ```{r}
 # Calculate ROC curve
@@ -1395,15 +1408,31 @@ cat("Neural Network - AUC:", auc_nn, "\n")
 
 ## e. Compare all models
 
-KNN
-- 5 fold
-- LOOCV
-GAM
-Tree-based Method
-- Classification Tree
-- Ensemble of bagged trees
-- Random Forest
-Neural Network
+- KNN 
+
+- Tree-based Method
+  
+  - Classification Tree
+  
+  - Ensemble of bagged trees
+  
+  - Random Forest 
+  
+- Neural Network
+
+
+```{r}
+# Create a summary table for accuracy and AUC
+accuracy_results <- data.frame(
+  Model = c("k-NN", "GAM", "Classification Tree", "Bagged Trees", "Random Forest", "Neural Network"),
+  Accuracy = c(knn_accuracy, gam_accuracy, tree_accuracy, bagg_accuracy, rf_accuracy, nn_accuracy),
+  AUC = c(auc_knn, auc_gam, auc(rocCurve.tree), auc(rocCurve.bagg), auc(rocCurve.rf), auc_nn)
+)
+
+# Print the summary table
+print(accuracy_results)
+
+```
 
 
 ```{r}
@@ -1420,4 +1449,3 @@ legend("bottomright", legend = c("Classification Tree", "Bagged Trees", "Random 
        col = c(4, 6, 1, "blue", "green", "purple"), lwd = 2, bty = "n")
 
 ```
-
