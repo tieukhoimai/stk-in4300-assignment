@@ -1,11 +1,11 @@
 ---
 title: "assignment_2"
 output:
-  pdf_document: 
-    toc: true
-    toc_depth: 3
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+  pdf_document: 
     toc: true
     toc_depth: 3
 date: "2024-10-16"
@@ -24,7 +24,11 @@ library(glmnet)
 library(boot)
 library(mgcv)
 library(rpart)
-library(rpart.plot)
+library(rpart.plot)             # Enhanced tree plots
+library(RColorBrewer)       # Color selection for fancy tree plot
+library(party)                  # Alternative decision tree algorithm
+library(partykit)               # Convert rpart object to BinaryTree
+library(pROC)   #for ROC curves
 ```
 
 # Problem 1. Regression
@@ -935,6 +939,27 @@ max(acc_k)
 max(which(acc_k == max(acc_k)))
 ```
 
+```{r}
+# Get K-NN result using best k
+best_k <- max(which(acc_k == max(acc_k)))
+set.seed(42)
+
+knn_pred <- knn(train = scale(X_train), test = scale(X_test), cl = y_train, k = best_k)
+
+# Convert K-NN predicted labels to probabilities for ROC
+knn_pred_prob <- ifelse(knn_pred == "pos", 1, 0)
+
+# Calculate ROC curve for K-NN
+roc_curve_knn <- roc(as.numeric(y_test == "pos"), knn_pred_prob)
+
+# Calculate and print AUC for K-NN
+auc_knn <- auc(roc_curve_knn)
+cat("k-NN - AUC:", auc_knn, "\n")
+
+# Plot ROC
+plot(roc_curve_knn)
+```
+
 ### Using 5-fold
 
 ```{r}
@@ -976,6 +1001,27 @@ max(cv_results$Accuracy)
 cv_results$k[which.max(cv_results$Accuracy)]
 ```
 
+```{r, include=FALSE}
+# Get K-NN result using best k
+best_k <- cv_results$k[which.max(cv_results$Accuracy)]
+set.seed(42)
+
+knn_5f_pred <- knn(train = scale(X_train), test = scale(X_test), cl = y_train, k = best_k)
+
+# Convert K-NN predicted labels to probabilities for ROC
+knn_5f_pred_prob <- ifelse(knn_5f_pred == "pos", 1, 0)
+
+# Calculate ROC curve for K-NN
+roc_curve_knn_5f <- roc(as.numeric(y_test == "pos"), knn_pred_prob)
+
+# Calculate and print AUC for K-NN
+auc_knn_5f <- auc(roc_curve_knn_5f)
+cat("k-NN - AUC:", auc_knn_5f, "\n")
+
+# Plot ROC
+plot(roc_curve_knn_5f)
+```
+
 ### Using leave-one-out cross-validation
 
 ```{r}
@@ -1010,7 +1056,28 @@ max(cv_results_loocv$Accuracy)
 ```
 
 ```{r}
-cv_results$k[which.max(cv_results_loocv$Accuracy)]
+cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)]
+```
+
+```{r, include=FALSE}
+# Get K-NN result using best k
+best_k_loocv <- cv_results$k[which.max(cv_results_loocv$Accuracy)]
+set.seed(42)
+
+knn_loocv_pred <- knn(train = scale(X_train), test = scale(X_test), cl = y_train, k = best_k)
+
+# Convert K-NN predicted labels to probabilities for ROC
+knn_loocv_pred_prob <- ifelse(knn_loocv_pred == "pos", 1, 0)
+
+# Calculate ROC curve for K-NN
+roc_curve_knn_loocv <- roc(as.numeric(y_test == "pos"), knn_pred_prob)
+
+# Calculate and print AUC for K-NN
+auc_knn_loocv <- auc(roc_curve_knn_loocv)
+cat("k-NN - AUC:", auc_knn_loocv, "\n")
+
+# Plot ROC
+plot(roc_curve_knn_loocv)
 ```
 
 ## b. Generalized Additive Model (GAM)
@@ -1059,17 +1126,32 @@ ggplot(sm_df, aes(x = x, y = fit)) +
   labs(x = p_obj$xlab, y = p_obj$ylab)
 ```
 
+```{r}
+# Predictions and probabilities for GAM
+gam_pred_prob <- predict(gam_model, newdata = test, type = "response")
+
+# Convert probabilities to binary predictions for confusion matrix
+gam_pred_class <- ifelse(gam_pred_prob > 0.5, "pos", "neg")
+
+# Calculate accuracy for GAM
+gam_accuracy <- mean(gam_pred_class == test$diabetes)
+cat("GAM - Test Accuracy:", gam_accuracy, "\n")
+
+# Calculate ROC curve for GAM
+roc_curve_gam <- roc(test$diabetes, gam_pred_prob)
+
+# Calculate and print AUC for GAM
+auc_gam <- auc(roc_curve_gam)
+cat("GAM - AUC:", auc_gam, "\n")
+
+# Plot ROC
+plot(roc_curve_gam)
+```
+
+
 ## c. Tree-based methods
 
 Setting up the k-fold cross validation k = 10 cross-validation folds. Reference: <https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html>
-
-```{r}
-library(rpart)                  # For trees
-library(rpart.plot)             # Enhanced tree plots
-library(party)                  # Alternative decision tree algorithm
-library(partykit)               # Convert rpart object to BinaryTree
-library(pROC)                   # For ROC curves
-```
 
 ```{r}
 set.seed(1234)
@@ -1233,15 +1315,12 @@ plot(rocCurve.rf,col=c(4))
 auc(rocCurve.rf)
 ```
 
-### Tree-based models comparision
-
-```{r}
-plot(rocCurve.tree,col=c(4))
-plot(rocCurve.bagg,add=TRUE,col=c(6)) # color magenta is bagg
-plot(rocCurve.rf,add=TRUE,col=c(1)) # color black is rf
-```
 
 ## d. Neural Network
+
+Reference:
+
+-   <https://www.datacamp.com/tutorial/neural-network-models-r>
 
 ```{r}
 library(tidyverse)
@@ -1249,11 +1328,27 @@ library(neuralnet)
 ```
 
 ```{r}
+# Extract features and labels
+X_train_nn <- as.data.frame(train[, -ncol(train)])
+y_train_nn <- as.numeric(train$diabetes == "pos")  # Convert to binary 0/1
+X_test_nn <- as.data.frame(test[, -ncol(test)])
+y_test_nn <- as.numeric(test$diabetes == "pos")
+
+# Scale the features
+X_train_nn_scaled <- scale(X_train_nn)
+X_test_nn_scaled <- scale(X_test_nn)
+
+# Combine scaled features and labels for training
+train_combined <- cbind(X_train_nn_scaled, diabetes = y_train_nn)
+```
+
+
+```{r}
 nn_model = neuralnet(
     diabetes~.,
-data=train,
-hidden=c(16,8,2),
-linear.output = FALSE
+    data=train_combined,
+    hidden=c(16,8,4,2),
+    linear.output = FALSE
 )
 ```
 
@@ -1262,21 +1357,67 @@ plot(nn_model,rep = "best")
 ```
 
 ```{r}
-pred <- predict(nn_model, test)
-labels <- c("neg","pos")
+# Predict probabilities on test set
+nn_pred <- compute(nn_model, X_test_nn_scaled)
+nn_pred_prob <- nn_pred$net.result
 
-prediction_label <- data.frame(max.col(pred)) %>%     
-mutate(pred=labels[max.col.pred.]) %>%
-select(2) %>%
-unlist()
+# Convert probabilities to binary predictions
+nn_pred_class <- ifelse(nn_pred_prob > 0.5, 1, 0)
+```
+```{r}
+# Calculate and print confusion matrix
+conf_matrix <- table(Predicted = nn_pred_class, Actual = as.numeric(test$diabetes == "pos"))
+print(conf_matrix)
+```
 
-table(test$diabetes, prediction_label)
+
+```{r}
+# Calculate accuracy
+check <- as.numeric(test$diabetes == "pos") == nn_pred_class
+accuracy <- (sum(check) / nrow(test)) * 100
+print(paste("Neural Network Test Accuracy:", accuracy))
+```
+
+
+```{r}
+# Calculate ROC curve
+roc_curve_nn <- roc(test$diabetes, as.numeric(nn_pred_prob))
+
+# Plot the ROC curve
+plot(roc_curve_nn, col = "blue", main = "ROC Curve - Neural Network")
 ```
 
 ```{r}
-check = as.numeric(test$diabetes) == max.col(pred)
-accuracy = (sum(check)/nrow(test))*100
-print(accuracy)
+# Calculate and print AUC
+auc_nn <- auc(roc_curve_nn)
+cat("Neural Network - AUC:", auc_nn, "\n")
 ```
 
 ## e. Compare all models
+
+KNN
+- 5 fold
+- LOOCV
+GAM
+Tree-based Method
+- Classification Tree
+- Ensemble of bagged trees
+- Random Forest
+Neural Network
+
+
+```{r}
+# Plot ROC curves for ALL models
+plot(rocCurve.tree, col = 4, main = "ROC Curve Comparison", lwd = 2)
+lines(rocCurve.bagg, col = 6, lwd = 2)  # Add ROC curve for bagged trees
+lines(rocCurve.rf, col = 1, lwd = 2)    # Add ROC curve for random forest
+lines(roc_curve_nn, col = "blue", lwd = 2)  # Add ROC curve for neural network
+lines(roc_curve_knn, col = "green", lwd = 2)  # Add ROC curve for k-NN
+lines(roc_curve_gam, col = "purple", lwd = 2)  # Add ROC curve for GAM
+
+# Add a legend to the plot
+legend("bottomright", legend = c("Classification Tree", "Bagged Trees", "Random Forest", "Neural Network", "k-NN", "GAM"),
+       col = c(4, 6, 1, "blue", "green", "purple"), lwd = 2, bty = "n")
+
+```
+
