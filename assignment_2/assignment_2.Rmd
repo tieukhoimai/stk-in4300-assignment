@@ -1,11 +1,11 @@
 ---
 title: "assignment_2"
 output:
-  html_document:
-    df_print: paged
+  pdf_document: 
     toc: true
     toc_depth: 3
-  pdf_document: 
+  html_document:
+    df_print: paged
     toc: true
     toc_depth: 3
 date: "2024-10-16"
@@ -484,6 +484,12 @@ summary(model.forward.bic)
 
 ### Backward Elimination
 
+Backward Elimination is a stepwise regression method that starts with the full model and removes predictors one by one based on a criterion (e.g., AIC, BIC) until no more predictors can be removed.
+
+- Similar to forward selection, backward elimination with both AIC and BIC resulted in a model that includes MLOGP, TPSA, SAacc, nN, RDCHI, and GATS1p.
+
+- The consistency between forward and backward selection indicates that these predictors are strong, regardless of the method or criterion (AIC vs. BIC) used.
+
 ```{r}
 # With AIC
 model.backward.aic <- stepAIC(full.model, direction = 'backward', trace = FALSE)
@@ -494,7 +500,14 @@ model.backward.bic <- stepAIC(full.model, direction = 'backward', k = log(nrow(t
 summary(model.backward.bic)
 ```
 
+
 ### Stepwise Selection
+
+Stepwise Selection is a combination of forward and backward selection, where predictors are added or removed based on a criterion (e.g., AIC, BIC) until no more changes can be made.
+
+- The stepwise selection, which combines both forward and backward methods, also identified the same set of variables: MLOGP, TPSA, SAacc, nN, RDCHI, and GATS1p.
+
+- There is no significant difference between the AIC and BIC results in this specific case.
 
 ```{r}
 # With AIC
@@ -552,14 +565,18 @@ metrics <- data.frame(
 print(metrics)
 ```
 
+In conclusion, the variable selection procedures (forward, backward, and stepwise) consistently identified the same set of predictors: MLOGP, TPSA, SAacc, nN, RDCHI, and GATS1p.
+
 ## d. Ridge Regression
 
 ```{r}
+# Split the data into training (2/3) and test (1/3) sets
 set.seed(123)
 sample <- sample.split(data$LC50, SplitRatio = 2/3)
 train <- subset(data, sample == TRUE)
 test <- subset(data, sample == FALSE)
 
+# Set up the training and test data
 x_train <- as.matrix(train[, -9])
 y_train <- train$LC50
 x_test <- as.matrix(test[, -9])
@@ -606,7 +623,6 @@ plot(cv_ridge)
 
 ```{r}
 # Reference: https://pages.stat.wisc.edu/~kdlevin/teaching/Fall2022/STAT340/lecs/L13_bootstrap.html
-
 
 # Define ridge regression function for bootstrap
 ridge_bootstrap <- function(data, lambda, B = 100) {
@@ -656,6 +672,11 @@ cat(paste0(
 ```
 
 ### Cross Validation vs Bootstrap Comparision
+
+Using both cross-validation and bootstrap procedures, the optimal complexity parameter ($lambda$) was found to be approximately 0.017 using cross-validation and 0.013 using bootstrap.
+The performance of the ridge regression was very similar under both methods, with test set MSE around 1.40 and R-squared about 0.43, slightly better than the dummy encoded linear regression but on par with the original linear model.
+
+In the plot below, we observed that the both cross-validation and bootstrap should provide similar $lambda$ values, but cross-validation typically has less variance in error estimates compared to bootstrap.
 
 ```{r}
 # Create comparison data frame
@@ -767,7 +788,13 @@ cat(paste0(
 ))
 ```
 
+In conclusion, fitting GAM models with different levels of smoothing complexity (k=4 and k=6) showed that increasing complexity slightly improved the fit, with R^2 improving from 0.43 to 0.45 and RMSE decreasing from 1.19 to 1.17.
+However, the benefit of increasing complexity is relatively minor, suggesting that moderate smoothing (k=4) suffices for this problem without introducing too much overfitting.
+
 ## f. Regression Tree with Cost-Complexity Pruning
+
+The complexity parameter (CP) table below shows the relative error, cross-validated error, and standard deviation for each tree size, helping to determine the best trade-off between bias and variance.
+The final pruned tree has about 26 splits, meaning that it captures sufficient detail to provide accurate predictions without being overly complex.
 
 ```{r}
 # Fit a regression tree model
@@ -778,6 +805,17 @@ printcp(tree_model)  # Display the cost complexity pruning table
 optimal_cp <- tree_model$cptable[which.min(tree_model$cptable[,"xerror"]), "CP"]
 pruned_tree <- prune(tree_model, cp = optimal_cp)
 ```
+
+The root node splits based on MLOGP (lipophilicity), which is the most important predictor for determining the LC50 value.
+The tree continues to split based on other descriptors, such as:
+
+- RDCHI (topological index), which also be the first split in the tree
+  
+- C040 (the number of certain carbon atoms)
+  
+- TPSA (polar surface area)
+
+The terminal nodes represent the predicted LC50 values for the corresponding groups of observations.
 
 ```{r}
 # Visualize the tree
@@ -798,9 +836,9 @@ cat(paste0(
 ))
 ```
 
-## g. Compare all the models implemented
+However, the performance of the tree, with an R-squared of around 0.37 on the test set, suggests that the tree structure, while interpretable, may not capture the relationships in the data as effectively as other methods.
 
-[TBD]
+## g. Compare all the models implemented
 
 -   Linear Regression (Original)
 -   Linear Regression model by Dummy Encoding Method (Dummy Encoding)
@@ -852,13 +890,19 @@ ggplot(all_models_metrics, aes(x = Model, y = RMSE, fill = Model == best_mse_mod
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Plot RMSE across selected models
-ggplot(all_models_metrics, aes(x = Model, y = MSE, fill = Model == best_mse_model)) +
+ggplot(all_models_metrics, aes(x = Model, y = R2, fill = Model == best_mse_model)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("gray", "dodgerblue"), guide = "none") +
   theme_minimal() +
   labs(title = "R^2 Across Selected Models", x = "Model", y = "R2", fill = "Best Model") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+- The GAM (k=6) model provides the best performance, achieving the lowest error and highest R2. This indicates that adding flexibility through smoothing splines allows for capturing more intricate patterns in the data.
+
+- Ridge Regression (both cross-validation and bootstrap) also performs well, showing that regularization improves generalization without overfitting.
+
+- Variable Selection and the original linear model also perform solidly, while the dummy-encoded model underperforms due to oversimplification, and the regression tree shows the weakest results.
 
 # Problem 2. Classification
 
