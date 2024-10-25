@@ -1,16 +1,17 @@
 ---
-title: "assignment_2"
+title: "Assignment 2"
+author: "Khoi Mai Tieu"
 output:
+  pdf_document: 
+    toc: true
+    toc_depth: 3
   html_document:
     df_print: paged
     toc: true
     toc_depth: 3
-  pdf_document: 
-    toc: true
-    toc_depth: 3
-date: "2024-10-16"
 editor_options:
   chunk_output_type: inline
+course: "STK IN4300 - Statistical Learning Methods in Data Science"
 ---
 
 ```{r setup, include=FALSE}
@@ -54,7 +55,7 @@ head(data)
 
 ## a. Data splitting
 
-We splitthe data into a training and a test set, with approximately 2/3 and 1/3 of the observations, respectively.
+We split the data into a training and a test set, with approximately 2/3 and 1/3 of the observations, respectively.
 
 ```{r}
 # Use 2/3 of dataset as training set and remaining 1/3 as testing set
@@ -79,6 +80,7 @@ test_i = test
 ```
 
 The initial linear regression model shows significant predictors including TPSA, SAacc, MLOGP, RDCHI, GATS1p, and nN based on p-values less than 0.05. However, H050 and C040 do not appear to have a significant impact.
+
 ```{r}
 # Fit linear regression model on training data
 model <- lm(LC50 ~ ., data=train_i)
@@ -86,11 +88,11 @@ model <- lm(LC50 ~ ., data=train_i)
 summary(model)
 ```
 
-We will predict the LC50 values on the training and test datasets to evaluate the model using
+We will predict the LC50 values on the training and test datasets to evaluate the model using these metrics:
 
-- Mean Squared Error (MSE): $MSE = \sum_{i=1}^{D}(x_i-y_i)^2$
+- Mean Squared Error (MSE): $MSE = \sum_{i=1}^{n}(x_i-y_i)^2$
 - Root Mean Squared Error (RMSE): $RMSE = \sqrt{MSE}$
-- R-squared: $R^2 = 1 - \frac{\sum_{i=1}^{D}(x_i-y_i)^2}{\sum_{i=1}^{D}(x_i-\bar{x})^2}$
+- R-squared: $R^2 = 1 - \frac{\sum_{i=1}^{n}(x_i-y_i)^2}{\sum_{i=1}^{n}(x_i-\bar{x})^2}$
    
 ```{r}
 # Predict on training and test datasets
@@ -117,8 +119,7 @@ r2_test <- 1 - (sum((test_i$LC50 - test_i$predicted_LC50)^2) /
             sum((test_i$LC50 - mean(test_i$LC50))^2))
 ```
 
-We have the following result for the model on the training and test set as follows.
-We see that The training and test set metrics are reasonably close, with R-squared values indicating that approximately 50% of the variance is explained by the model in the training set and around 43% in the test set, suggesting the model generalizes fairly well.
+We have the following result for the model on the training and test set as follows.We see that the training and test set metrics are reasonably close, with R-squared values indicating that approximately 50% of the variance is explained by the model in the training set and around 43% in the test set, suggesting the model generalizes fairly well.
 
 ```{r}
 cat(paste0(
@@ -133,7 +134,6 @@ cat(paste0(
   "R-squared (Test): ", r2_test, "\n"
 ))
 ```
-
 Plotting the observed vs predicted LC50 values for the training and test sets, 
 we can see that the model generally performs well, with most points falling close to the dashed line (y=x) indicating perfect predictions.
 
@@ -157,9 +157,7 @@ ggplot(combined_data, aes(x = LC50, y = predicted_LC50, color = Type)) +
 
 ### (ii). Dummy encoding
 
-We can see that in our data set, there are 3 count variables (H050, nN, C040) that represent the number of specific atoms in the chemical compounds.
-We will transform these variables using a 0/1 dummy encoding, where 0 represents the absence of the specific atom, and 1 represents the presence of the specific atoms.
-In this case, I suppose that the model will perform a litter bit worse than the original model because we lose some information by transforming the count variables into binary variables. On the other hand, it may help to reduce overfitting because it simplifies the model.
+We can see that in our data set, there are 3 count variables (H050, nN, C040) that represent the number of specific atoms in the chemical compounds. We will transform these variables using a 0/1 dummy encoding, where 0 represents the absence of the specific atom, and 1 represents the presence of the specific atoms. In this case, I suppose that the model will perform a litter bit worse than the original model because we lose some information by transforming the count variables into binary variables. On the other hand, it may help to reduce overfitting because it simplifies the model.
 
 ```{r}
 # To make sure we use the same split in (i) and (ii)
@@ -204,8 +202,7 @@ train_ii$predicted_LC50 <- pred_train_transform_dummy
 test_ii$predicted_LC50 <- pred_test_transform_dummy
 ```
 
-Based on the results, we see that $R^2$ values dropped from 43% in the original model to around 38% after the transformation.
-For MSE and RMSE in test set, it increased slightly from 1.18 to 1.53 and 1.18 to 1.23, respectively.
+Based on the results, we see that $R^2$ values dropped from 43% in the original model to around 38% after the transformation. For MSE and RMSE in test set, it increased slightly from 1.18 to 1.53 and 1.18 to 1.23, respectively.
 
 ```{r}
 # Evaluate model: calculate MSE, RMSE, and R-squared for training and test sets
@@ -302,6 +299,7 @@ grid.arrange(train_plot, test_plot, ncol = 2)
 ```
 
 In initial conclusion in one time spliting, the original model (without dummy encoding) provides a better fit to both the training and testing data, as evidenced by its closer alignment with the ideal prediction line and lower dispersion in the test data.
+
 This is likely because it retains the continuous information in the count variables, which adds more nuance to the model's predictions.
 So, in part b, we will draw a more reliable conclusion by repeating the procedure 200 times and comparing the average test errors.
 
@@ -673,10 +671,10 @@ cat(paste0(
 
 ### Cross Validation vs Bootstrap Comparision
 
-Using both cross-validation and bootstrap procedures, the optimal complexity parameter ($lambda$) was found to be approximately 0.017 using cross-validation and 0.013 using bootstrap.
+Using both cross-validation and bootstrap procedures, the optimal complexity parameter ($\lambda$) was found to be approximately 0.017 using cross-validation and 0.013 using bootstrap.
 The performance of the ridge regression was very similar under both methods, with test set MSE around 1.40 and R-squared about 0.43, slightly better than the dummy encoded linear regression but on par with the original linear model.
 
-In the plot below, we observed that the both cross-validation and bootstrap should provide similar $lambda$ values, but cross-validation typically has less variance in error estimates compared to bootstrap.
+In the plot below, we observed that the both cross-validation and bootstrap should provide similar $\lambda$ values, but cross-validation typically has less variance in error estimates compared to bootstrap.
 
 ```{r}
 # Create comparison data frame
@@ -714,10 +712,10 @@ gam_model_1 <- gam(LC50 ~ s(TPSA, k = 4) + s(SAacc, k = 4) + s(H050, k = 4) +
 summary(gam_model_1)
 ```
 
-```{r}
+```{r, include = FALSE}
 # reference: https://stackoverflow.com/questions/67077306/plotting-output-of-gam-model
 
-p_obj <- plot(gam_model_1, residuals = TRUE)
+p_obj <- plot(gam_model_1, residuals = TRUE, pages = 1, scale = 0)
 p_obj <- p_obj[[1]] # just one smooth so select the first component
 sm_df <- as.data.frame(p_obj[c("x", "se", "fit")])
 data_df <- as.data.frame(p_obj[c("raw", "p.resid")])
@@ -740,7 +738,7 @@ gam_rmse_1 <- sqrt(gam_mse_1)
 gam_r2_1 <- 1 - (sum((gam_pred_1 - y_test)^2) / sum((y_test - mean(y_test))^2))
 
 cat(paste0(
-  "MSE: ", gam_mse_1, "\n",
+  "MSE (Test): ", gam_mse_1, "\n",
   "RMSE (Test): ", gam_rmse_1, "\n",
   "R-squared (Test): ", gam_r2_1, "\n"
 ))
@@ -758,8 +756,9 @@ gam_model_2 <- gam(LC50 ~ s(TPSA, k = 6) + s(SAacc, k = 6) + s(H050, k = 6) +
 summary(gam_model_2)
 ```
 
-```{r}
-p_obj_2 <- plot(gam_model_2, residuals = TRUE)
+```{r, include = FALSE}
+p_obj_2 <- plot(gam_model_2, residuals = TRUE,  pages = 1, scale = 0)
+
 p_obj_2 <- p_obj_2[[1]] # just one smooth so select the first component
 sm_df_2 <- as.data.frame(p_obj_2[c("x", "se", "fit")])
 data_df_2 <- as.data.frame(p_obj_2[c("raw", "p.resid")])
@@ -782,7 +781,7 @@ gam_rmse_2 <- sqrt(gam_mse_2)
 gam_r2_2 <- 1 - (sum((gam_pred_2 - y_test)^2) / sum((y_test - mean(y_test))^2))
 
 cat(paste0(
-  "MSE: ", gam_mse_2, "\n",
+  "MSE: (Test):", gam_mse_2, "\n",
   "RMSE (Test): ", gam_rmse_2, "\n",
   "R-squared (Test): ", gam_r2_2, "\n"
 ))
@@ -793,12 +792,14 @@ However, the benefit of increasing complexity is relatively minor, suggesting th
 
 ## f. Regression Tree with Cost-Complexity Pruning
 
-The complexity parameter (CP) table below shows the relative error, cross-validated error, and standard deviation for each tree size, helping to determine the best trade-off between bias and variance.
-The final pruned tree has about 26 splits, meaning that it captures sufficient detail to provide accurate predictions without being overly complex.
+The complexity parameter (CP) table below shows the relative error, cross-validated error, and standard deviation for each tree size, helping to determine the best trade-off between bias and variance. The final pruned tree has about 26 splits, meaning that it captures sufficient detail to provide accurate predictions without being overly complex.
 
 ```{r}
 # Fit a regression tree model
-tree_model <- rpart(LC50 ~ ., data = train, method = "anova", control = rpart.control(cp = 0.001))
+tree_model <- rpart(LC50 ~ ., 
+                    data = train,
+                    method = "anova",
+                    control = rpart.control(cp = 0.001))
 printcp(tree_model)  # Display the cost complexity pruning table
 
 # Prune the tree
@@ -830,7 +831,7 @@ tree_rmse <- sqrt(tree_mse)
 tree_r2 <- 1 - (sum((tree_pred - y_test)^2) / sum((y_test - mean(y_test))^2))
 
 cat(paste0(
-  "MSE: ", tree_mse, "\n",
+  "MSE (Test): ", tree_mse, "\n",
   "RMSE (Test): ", tree_rmse, "\n",
   "R-squared (Test): ", tree_r2, "\n"
 ))
@@ -843,7 +844,7 @@ However, the performance of the tree, with an R-squared of around 0.37 on the te
 -   Linear Regression (Original)
 -   Linear Regression model by Dummy Encoding Method (Dummy Encoding)
 -   Ridge Regression with Cross Validation (Ridge CV)
--   Ridge Regression with Bootstrapping ("Ridge Bootstrap")
+-   Ridge Regression with Bootstrapping (Ridge Bootstrap)
 -   Generalized Additive Model with lower complexity (GAM k=4)
 -   Generalized Additive Model with higher complexity (GAM k=6)
 -   Regression Tree with Cost-Complexity Pruning (Tree)
@@ -898,11 +899,11 @@ ggplot(all_models_metrics, aes(x = Model, y = R2, fill = Model == best_mse_model
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-- The GAM (k=6) model provides the best performance, achieving the lowest error and highest R2. This indicates that adding flexibility through smoothing splines allows for capturing more intricate patterns in the data.
+- The GAM (k=6) model provides the best performance, achieving the lowest error and highest R2. This indicates that adding flexibility through smoothing splines allows for capturing more intricate patterns in the data. 
 
-- Ridge Regression (both cross-validation and bootstrap) also performs well, showing that regularization improves generalization without overfitting.
+- It is closely followed by Ridge Regression (both cross-validation and bootstrap), which also performs well, showing that regularization improves generalization without overfitting.
 
-- Variable Selection and the original linear model also perform solidly, while the dummy-encoded model underperforms due to oversimplification, and the regression tree shows the weakest results.
+- Variable Selection and the original linear model also perform solidly, while the dummy-encoded model under performs due to oversimplification, and the regression tree shows the weakest results.
 
 # Problem 2. Classification
 
@@ -960,7 +961,7 @@ cat("Dimension of Training Set:", paste(dim(train), collapse = "x"), "\nDimensio
 
 ## a. k-NN classifier
 
-```{r}
+```{r, include=FALSE}
 library(class)
 library(caret)
 library(FNN)
@@ -997,8 +998,6 @@ for (i in seq_along(k_to_try)) {
 
 ```{r}
 ex_seq = seq(from = 1, to = 100, by = 5)
-seq_along(ex_seq)
-
 ex_storage = rep(x = 0, times = length(ex_seq))
 for(i in seq_along(ex_seq)) {
   ex_storage[i] = mean(rnorm(n = 10, mean = ex_seq[i], sd = 1))
@@ -1006,6 +1005,8 @@ for(i in seq_along(ex_seq)) {
 
 ex_storage
 ```
+
+We see that $k = 9$ are tied for the highest accuracy. Also notice that, as $k$ increases, eventually the accuracy approaches the test prevalence.
 
 ```{r}
 # Reference: https://daviddalpiaz.github.io/r4sl/k-nearest-neighbors.html
@@ -1023,14 +1024,12 @@ abline(h = mean(y_test == "No"), col = "grey", lty = 2)
 ```
 
 ```{r}
-max(acc_k)
+cat("Number of optimal k: ", paste(max(which(acc_k == max(acc_k)))),
+    "\nAccuracy: ", paste(max(acc_k)))
 ```
 
-```{r}
-max(which(acc_k == max(acc_k)))
-```
 
-```{r}
+```{r, include=FALSE}
 # Get K-NN result using best k
 best_k <- max(which(acc_k == max(acc_k)))
 set.seed(42)
@@ -1047,8 +1046,13 @@ roc_curve_knn <- roc(as.numeric(y_test == "pos"), knn_pred_prob)
 
 # Calculate and print AUC for K-NN
 auc_knn <- auc(roc_curve_knn)
-cat("k-NN - AUC:", auc_knn, "\n")
-cat("Accuracy:", knn_accuracy, "\n")
+```
+
+As the plot below, we can see that k-NN classifier has moderate discriminative ability. This performance aligns with the AUC of 0.721, which reflects that k-NN is a reasonably effective classifier.
+
+```{r}
+cat("k-NN\nAUC:", auc_knn,
+    "\nAccuracy:", knn_accuracy)
 
 # Plot ROC
 plot(roc_curve_knn)
@@ -1076,23 +1080,31 @@ head(cv_results)
 ```{r}
 # Plot the 5-fold CV accuracy vs choice of k
 
-plot(cv_results$k, cv_results$Accuracy, type = "b", col = "red", cex = 1, pch = 20,
+plot(cv_results$k,
+     cv_results$Accuracy,
+     type = "b",
+     col = "red",
+     cex = 1,
+     pch = 20,
      xlab = "k, number of neighbors", ylab = "classification accuracy",
      main = "5-fold CV Accuracy vs Neighbors")
-#legend("bottomright", legend = "5-fold CV Accuracy", col = "red", pch = 19, lty = 1)
 
 # Add lines indicating k with best accuracy
-abline(v = cv_results$k[which.max(cv_results$Accuracy)], col = "darkorange", lwd = 1.5)
+abline(v = cv_results$k[which.max(cv_results$Accuracy)],
+       col = "darkorange",
+       lwd = 1.5)
 # Add line for max accuracy seen
 abline(h = max(cv_results$Accuracy), col = "grey", lty = 2)
 ```
 
-```{r}
-max(cv_results$Accuracy)
-```
+Applying 5-fold CV, k = 8 is the optimal number of neighbors for the k-NN model. And the model achieved an accuracy of 75.57% on the test set. 
 
 ```{r}
-cv_results$k[which.max(cv_results$Accuracy)]
+cat("k-NN (5 fold CV)",
+    "\nNumber of optimal k: ",
+    paste(cv_results$k[which.max(cv_results$Accuracy)]),
+    "\nAccuracy: ",
+    paste(max(cv_results$Accuracy)))
 ```
 
 ```{r, include=FALSE}
@@ -1100,7 +1112,10 @@ cv_results$k[which.max(cv_results$Accuracy)]
 best_k <- cv_results$k[which.max(cv_results$Accuracy)]
 set.seed(42)
 
-knn_5f_pred <- knn(train = scale(X_train), test = scale(X_test), cl = y_train, k = best_k)
+knn_5f_pred <- knn(train = scale(X_train),
+                   test = scale(X_test),
+                   cl = y_train,
+                   k = best_k)
 
 # Convert K-NN predicted labels to probabilities for ROC
 knn_5f_pred_prob <- ifelse(knn_5f_pred == "pos", 1, 0)
@@ -1135,22 +1150,33 @@ head(cv_results_loocv)
 ```{r}
 # Plot the LOOCV accuracy vs choice of k
 
-plot(cv_results_loocv$k, cv_results_loocv$Accuracy, type = "b", col = "red", cex = 1, pch = 20,
-     xlab = "k, number of neighbors", ylab = "classification accuracy",
+plot(cv_results_loocv$k,
+     cv_results_loocv$Accuracy,
+     type = "b",
+     col = "red",
+     cex = 1,
+     pch = 20,
+     xlab = "k, number of neighbors",
+     ylab = "classification accuracy",
      main = "LOOCV Accuracy vs Neighbors")
 
 # Add lines indicating k with best accuracy
-abline(v = cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)], col = "darkorange", lwd = 1.5)
+abline(v = cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)],
+       col = "darkorange",
+       lwd = 1.5)
+
 # Add line for max accuracy seen
 abline(h = max(cv_results_loocv$Accuracy), col = "grey", lty = 2)
 ```
 
-```{r}
-max(cv_results_loocv$Accuracy)
-```
+With k = 22, the model achieved an accuracy of 75.95%, slightly higher than the 5-fold CV result.
 
 ```{r}
-cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)]
+cat("k-NN (LOOCV)",
+    "\nNumber of optimal k: ",
+    paste(cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)]),
+    "\nAccuracy: ",
+    paste(max(cv_results_loocv$Accuracy)))
 ```
 
 ```{r, include=FALSE}
@@ -1158,7 +1184,10 @@ cv_results_loocv$k[which.max(cv_results_loocv$Accuracy)]
 best_k_loocv <- cv_results$k[which.max(cv_results_loocv$Accuracy)]
 set.seed(42)
 
-knn_loocv_pred <- knn(train = scale(X_train), test = scale(X_test), cl = y_train, k = best_k)
+knn_loocv_pred <- knn(train = scale(X_train), 
+                      test = scale(X_test), 
+                      cl = y_train, 
+                      k = best_k)
 
 # Convert K-NN predicted labels to probabilities for ROC
 knn_loocv_pred_prob <- ifelse(knn_loocv_pred == "pos", 1, 0)
@@ -1174,36 +1203,39 @@ cat("k-NN - AUC:", auc_knn_loocv, "\n")
 plot(roc_curve_knn_loocv)
 ```
 
+In conclusion, LOOCV tends to select a larger k = 22 and archives slightly better accuracy (75.95%) compared to 5-fold CV with k = 8 (75.57%). This suggests that the higher k reduces the risk of overfitting by averaging predictions over a larger neighborhood of points, but 5-fold CV remains a practical alternative with nearly comparable results.
+
 ## b. Generalized Additive Model (GAM)
 
 ```{r}
+# reference: <https://osf.io/wgc4f/wiki/mgcv:%20model%20selection/>
+
 # Fit a GAM with automatic smoothness selection
 gam_model <- gam(
-      diabetes ~ s(glucose) + s(pressure) + s(insulin) + s(mass) + s(pedigree) + s(age) + s(pregnant), 
+      diabetes ~ 
+        s(glucose) + 
+        s(pressure) + 
+        s(insulin) + 
+        s(mass) + 
+        s(pedigree) + 
+        s(age) + 
+        s(pregnant), 
       data = train,
       family = binomial(link = 'logit'),
       select = TRUE,
       method= "REML")
 ```
 
-In the `summary(model)` output, the Approximate significance of smooth terms table shows an estimated degrees of freedom (edf) and Chi square score (Chi.sq) close to zero, with a p-value \> 0.05:
+In the `summary(model)` output, the Approximate significance of smooth terms table shows an estimated degrees of freedom (edf) and Chi square score (Chi.sq) close to zero, with a p-value \> 0.05. 
 
 ```{r}
 summary(gam_model)
 ```
 
-Reference: <https://osf.io/wgc4f/wiki/mgcv:%20model%20selection/>
+We can see that there are `glucose`, `mass`, `pedigree`, `age` and `pregnant` are significant predictors of diabetes risk in this GAM model (based on the p-value is greater than 0.05). `pressure` and `insulin` have p-values > 0.05, suggesting they do not contribute meaningfully to the model and could be removed to simplify it.
 
-[TBD] You can use these statistics to detect a shrunk term. It is usually sufficient to check for p-values \> 0.05:
-
-```{r}
-summary(gam_model)$s.pv
-```
-
-We can see that the glucose and pedigree is a shrunk term
-
-```{r}
-p_obj <- plot(gam_model, residuals = TRUE)
+```{r, include=FALSE}
+p_obj <- plot(gam_model, residuals = TRUE, pages = 1, scale = 0)
 
 p_obj <- p_obj[[1]] # just one smooth so select the first component
 sm_df <- as.data.frame(p_obj[c("x", "se", "fit")])
@@ -1218,9 +1250,7 @@ ggplot(sm_df, aes(x = x, y = fit)) +
               alpha = 0.3) +
   geom_line() +
   labs(x = p_obj$xlab, y = p_obj$ylab)
-```
 
-```{r}
 # Predictions and probabilities for GAM
 gam_pred_prob <- predict(gam_model, newdata = test, type = "response")
 
@@ -1229,24 +1259,32 @@ gam_pred_class <- ifelse(gam_pred_prob > 0.5, "pos", "neg")
 
 # Calculate accuracy for GAM
 gam_accuracy <- mean(gam_pred_class == test$diabetes)
-cat("GAM - Test Accuracy:", gam_accuracy, "\n")
+
 
 # Calculate ROC curve for GAM
 roc_curve_gam <- roc(test$diabetes, gam_pred_prob)
 
 # Calculate and print AUC for GAM
 auc_gam <- auc(roc_curve_gam)
-cat("GAM - AUC:", auc_gam, "\n")
+```
+
+```{r}
+cat("GAM\nTest Accuracy:", gam_accuracy)
+cat("\nAUC:", auc_gam, "\n")
 
 # Plot ROC
 plot(roc_curve_gam)
 ```
 
+In conclusion, The GAM model with spline smoothing achieves a test accuracy of 77.69%. The AUC for GAM is 0.833, indicating that it has strong performance in distinguishing between diabetic and non-diabetic individuals.
+
 ## c. Tree-based methods
 
-Setting up the k-fold cross validation k = 10 cross-validation folds. Reference: <https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html>
+Setting up the k-fold cross validation k = 10 cross-validation folds. 
 
 ```{r}
+# reference: https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html
+
 set.seed(1234)
 
 # Setting up cross-validation
@@ -1296,12 +1334,8 @@ confusionMatrix(test$diabetes, tree.classTest)
 ```
 
 
-```{r}
+```{r, include = FALSE}
 tree_accuracy <- mean(tree.classTest == test$diabetes)
-cat("Accuracy of Classification Tree:", tree_accuracy, "\n")
-```
-
-```{r}
 #Obtaining predicted probabilites for Test data
 tree.probs=predict(train.tree,
                  newdata=test,
@@ -1309,12 +1343,17 @@ tree.probs=predict(train.tree,
 
 #Calculate ROC curve
 rocCurve.tree <- roc(test$diabetes,tree.probs[,"neg"])
+```
 
+
+```{r}
 #plot the ROC curve
 plot(rocCurve.tree,col=c(4))
 
-#calculate the area under curve
-auc(rocCurve.tree)
+cat("Classification Tree",
+    "\nAccuracy:", tree_accuracy,
+    "\nAUC:",auc(rocCurve.tree)
+    )
 ```
 
 ### (ii) Ensemble of bagged trees
@@ -1350,14 +1389,9 @@ confusionMatrix(test$diabetes, bagg.classTest)
 ```
 
 
-```{r}
+```{r, include=FALSE}
 bagg_accuracy <- mean(bagg.classTest == test$diabetes)
-cat("Accuracy of Classification Tree:", bagg_accuracy, "\n")
-```
 
-
-
-```{r}
 #Obtaining predicted probabilities for Test data
 bagg.probs=predict(train.bagg,
                  newdata=test,
@@ -1365,12 +1399,18 @@ bagg.probs=predict(train.bagg,
 
 #Calculate ROC curve
 rocCurve.bagg <- roc(test$diabetes, bagg.probs[,"neg"])
+```
 
-#plot the ROC curve
-plot(rocCurve.bagg,col=c(4))
 
-#calculate the area under curve (bigger is better)
-auc(rocCurve.bagg)
+
+```{r}
+# plot the ROC curve
+plot(rocCurve.tree,col=c(4))
+
+cat("Classification Tree",
+    "\nAccuracy:", bagg_accuracy,
+    "\nAUC:",auc(rocCurve.bagg)
+    )
 ```
 
 ### (iii) Random Forest
@@ -1403,13 +1443,9 @@ confusionMatrix(test$diabetes, rf.classTest)
 
 ```
 
-```{r}
+```{r, include=FALSE}
 rf_accuracy <- mean(bagg.classTest == test$diabetes)
-cat("Accuracy of Classification Tree:", rf_accuracy, "\n")
-```
 
-
-```{r}
 #Obtaining predicted probabilities for Test data
 rf.probs=predict(train.rf,
                  newdata=test,
@@ -1418,25 +1454,31 @@ rf.probs=predict(train.rf,
 #Calculate ROC curve
 rocCurve.rf <- roc(test$diabetes, rf.probs[,"neg"])
 
-#plot the ROC curve
-plot(rocCurve.rf,col=c(4))
-
 #calculate the area under curve (bigger is better)
 auc(rocCurve.rf)
 ```
 
-## d. Neural Network
-
-Reference:
-
--   <https://www.datacamp.com/tutorial/neural-network-models-r>
 
 ```{r}
+# plot the ROC curve
+plot(rocCurve.tree,col=c(4))
+
+cat("Classification Tree",
+    "\nAccuracy:", rf_accuracy,
+    "\nAUC:",auc(rocCurve.rf)
+    )
+```
+
+## d. Neural Network
+
+```{r, include = FALSE}
 library(tidyverse)
 library(neuralnet)
 ```
 
 ```{r}
+# reference: https://www.datacamp.com/tutorial/neural-network-models-r
+
 # Extract features and labels
 X_train_nn <- as.data.frame(train[, -ncol(train)])
 y_train_nn <- as.numeric(train$diabetes == "pos")  # Convert to binary 0/1
@@ -1479,25 +1521,24 @@ conf_matrix <- table(Predicted = nn_pred_class, Actual = as.numeric(test$diabete
 print(conf_matrix)
 ```
 
-```{r}
+```{r, include=FALSE}
 # Calculate accuracy
 check <- as.numeric(test$diabetes == "pos") == nn_pred_class
 nn_accuracy <- (sum(check) / nrow(test)) 
-print(paste("Neural Network Test Accuracy:", nn_accuracy))
-```
-
-```{r}
-# Calculate ROC curve
 roc_curve_nn <- roc(test$diabetes, as.numeric(nn_pred_prob))
 
-# Plot the ROC curve
-plot(roc_curve_nn, col = "blue", main = "ROC Curve - Neural Network")
+# Calculate and print AUC
+auc_nn <- auc(roc_curve_nn)
 ```
 
 ```{r}
-# Calculate and print AUC
-auc_nn <- auc(roc_curve_nn)
-cat("Neural Network - AUC:", auc_nn, "\n")
+# Plot the ROC curve
+plot(roc_curve_nn, col = "blue", main = "ROC Curve - Neural Network")
+
+cat("Neural Network",
+    "\nAccuracy:", nn_accuracy,
+    "\nAUC:", auc_nn
+)
 ```
 
 ## e. Compare all models
