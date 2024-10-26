@@ -2,11 +2,11 @@
 title: "Assignment 2"
 author: "Khoi Mai Tieu"
 output:
-  pdf_document: 
-    toc: true
-    toc_depth: 3
   html_document:
     df_print: paged
+    toc: true
+    toc_depth: 3
+  pdf_document: 
     toc: true
     toc_depth: 3
 editor_options:
