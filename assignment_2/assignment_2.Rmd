@@ -1280,7 +1280,7 @@ In conclusion, The GAM model with spline smoothing achieves a test accuracy of 7
 
 ## c. Tree-based methods
 
-Setting up the k-fold cross validation k = 10 cross-validation folds. 
+Setting up the k-fold cross validation k = 10 cross-validation folds for all tree based method. 
 
 ```{r}
 # reference: https://quantdev.ssri.psu.edu/sites/qdev/files/09_EnsembleMethods_2017_1127.html
@@ -1304,13 +1304,23 @@ train.tree <- train(as.factor(diabetes) ~ .,
 train.tree
 ```
 
-```{r}
+
+```{r, include=FALSE}
 plot(train.tree)
 ```
+
+We can see that the optimal mincriterion value selected was 0.01, which provided the highest accuracy of 79.32% and a Kappa of 0.5294 during cross-validation.
+
+- The root node splits based on glucose (with a p-value < 0.001). If glucose is ≤131, the model then considers age (with a split at age ≤28). This indicates that glucose is the first major factor, followed by age for further classification.
+- Other significant splits include conditions based on insulin, pedigree, prenants and mass for certain branches.
+- The end nodes represent the final classification of each branch, either "pos" or "neg" for diabetes, along with the proportion of samples in each class.
+
+This aligns with known risk factors for diabetes, where higher glucose levels, older age, higher BMI, and pregnancy history (for gestational diabetes) are associated with a higher risk.
 
 ```{r}
 plot(train.tree$finalModel)
 ```
+To evaluate this model, we apply t
 
 ```{r}
 # obtaining class predictions for training
@@ -1319,8 +1329,6 @@ tree.classTrain <-  predict(train.tree, type="raw")
 # Check accuracy and confusion matrix for training set
 confusionMatrix(train$diabetes, tree.classTrain)
 ```
-
-Accuracy of training set is 86.64%
 
 
 ```{r}
@@ -1333,7 +1341,6 @@ tree.classTest <-  predict(train.tree,
 confusionMatrix(test$diabetes, tree.classTest)
 ```
 
-
 ```{r, include = FALSE}
 tree_accuracy <- mean(tree.classTest == test$diabetes)
 #Obtaining predicted probabilites for Test data
@@ -1344,6 +1351,7 @@ tree.probs=predict(train.tree,
 #Calculate ROC curve
 rocCurve.tree <- roc(test$diabetes,tree.probs[,"neg"])
 ```
+
 
 
 ```{r}
