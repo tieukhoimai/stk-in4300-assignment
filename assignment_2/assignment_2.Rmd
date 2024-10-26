@@ -14,7 +14,7 @@ editor_options:
 course: "STK IN4300 - Statistical Learning Methods in Data Science"
 ---
 
-```{r setup, include=FALSE}
+```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(caTools)
@@ -31,6 +31,7 @@ library(party)
 library(partykit)               
 library(pROC)   
 ```
+
 
 # Problem 1. Regression
 
@@ -1304,14 +1305,13 @@ train.tree <- train(as.factor(diabetes) ~ .,
 train.tree
 ```
 
-
 ```{r, include=FALSE}
 plot(train.tree)
 ```
 
 We can see that the optimal mincriterion value selected was 0.01, which provided the highest accuracy of 79.32% and a Kappa of 0.5294 during cross-validation.
 
-- The root node splits based on glucose (with a p-value < 0.001). If glucose is ≤131, the model then considers age (with a split at age ≤28). This indicates that glucose is the first major factor, followed by age for further classification.
+- The root node splits based on glucose (with a p-value < 0.001). If glucose is <= 131, the model then considers age (with a split at age <= 28). This indicates that glucose is the first major factor, followed by age for further classification.
 - Other significant splits include conditions based on insulin, pedigree, prenants and mass for certain branches.
 - The end nodes represent the final classification of each branch, either "pos" or "neg" for diabetes, along with the proportion of samples in each class.
 
@@ -1320,7 +1320,7 @@ This aligns with known risk factors for diabetes, where higher glucose levels, o
 ```{r}
 plot(train.tree$finalModel)
 ```
-To evaluate this model, we apply t
+On the training set, the classification tree provides a high level of interpretability, accurately classifying diabetes status with an accuracy of 86.64% and balanced sensitivity and specificity. 
 
 ```{r}
 # obtaining class predictions for training
@@ -1330,6 +1330,7 @@ tree.classTrain <-  predict(train.tree, type="raw")
 confusionMatrix(train$diabetes, tree.classTrain)
 ```
 
+On the test set, the model's performance slightly declined, with accuracy dropping to 76.15% and Kappa reducing to 0.4451. Sensitivity remained relatively high at 80.43%, but specificity decreased to 65.79%.
 
 ```{r}
 # Obtaining class predictions for test set
@@ -1351,8 +1352,6 @@ tree.probs=predict(train.tree,
 #Calculate ROC curve
 rocCurve.tree <- roc(test$diabetes,tree.probs[,"neg"])
 ```
-
-
 
 ```{r}
 #plot the ROC curve
@@ -1376,6 +1375,8 @@ train.bagg <- train(as.factor(diabetes) ~ .,
 train.bagg
 ```
 
+The importance plot shows that glucose and insulin are the top predictors, followed by age and mass (BMI). These variables align well with known diabetes risk factors, reinforcing the model’s reliance on medically relevant predictors. Less important variables include triceps, pregnant, pedigree, and pressure, which have minimal impact on the model’s decisions.
+
 ```{r}
 plot(varImp(train.bagg))
 ```
@@ -1388,6 +1389,8 @@ confusionMatrix(train$diabetes, bagg.classTrain)
 
 ```
 
+To evaluate the accuracy of the Bagged Trees we can look at the confusion matrix for the training data. It indicates an accuracy of 100%, which may result in overfitting, particularly when evaluated on new data.
+
 ```{r}
 bagg.classTest <-  predict(train.bagg, 
                            newdata = test,
@@ -1396,6 +1399,7 @@ bagg.classTest <-  predict(train.bagg,
 confusionMatrix(test$diabetes, bagg.classTest)
 ```
 
+Applying for the testing data, the accuracy is 76.92% and Kappa is 0.4662 showing moderate agreement on the test set and slightly better than the classification tree’s Kappa score, which was 0.4451
 
 ```{r, include=FALSE}
 bagg_accuracy <- mean(bagg.classTest == test$diabetes)
@@ -1409,7 +1413,7 @@ bagg.probs=predict(train.bagg,
 rocCurve.bagg <- roc(test$diabetes, bagg.probs[,"neg"])
 ```
 
-
+The ROC curve for the bagged trees shows a smoother and better-performing curve than the single classification tree. AUC is bagged tree is 0.8311, which is higher than the AUC of the single classification tree (0.7848). This suggests that the ensemble model has a stronger ability to discriminate between diabetic and non-diabetic cases across different thresholds.
 
 ```{r}
 # plot the ROC curve
@@ -1423,6 +1427,8 @@ cat("Classification Tree",
 
 ### (iii) Random Forest
 
+Applying Random Forest, which builds multiple decision trees and averages their predictions to create a robust classifier. As shown in the summary table below, the best hyperparameter `mtry` (the number of predictors to sample for each split) was found to be 5, yielding the highest accuracy (80.14%) and Kappa (0.5417) among the tested values.
+
 ```{r}
 #Using treebag 
 train.rf <- train(as.factor(diabetes) ~ ., 
@@ -1434,6 +1440,8 @@ train.rf <- train(as.factor(diabetes) ~ .,
 train.rf
 ```
 
+On the training set, the accuracy is 100%, with both Sensitivity and Specificity also at 100%, and a Kappa value of 1.0. This indicates that the model perfectly fits the training data, a common characteristic of Random Forest models when sufficient trees are used.
+
 ```{r}
 #obtaining class predictions
 rf.classTrain <-  predict(train.rf, type="raw")
@@ -1441,6 +1449,8 @@ rf.classTrain <-  predict(train.rf, type="raw")
 confusionMatrix(train$diabetes, rf.classTrain)
 
 ```
+
+On the test set, the accuracy is 76.92%, consistent with earlier models such as bagged trees and the single decision tree. The sensitivity value is 82.02%, indicating that the model is effective at identifying non-diabetic cases. However, the specificity is 65.85%, suggesting that it is less effective at detecting diabetic cases, resulting in some false negatives.
 
 ```{r}
 rf.classTest <-  predict(train.rf, 
@@ -1450,6 +1460,8 @@ rf.classTest <-  predict(train.rf,
 confusionMatrix(test$diabetes, rf.classTest)
 
 ```
+
+The AUC is 0.8292, which is slightly higher than the AUC of the bagged trees (0.8311) and the single decision tree (0.7848). This suggests that the Random Forest model demonstrates strong discriminatory power.
 
 ```{r, include=FALSE}
 rf_accuracy <- mean(bagg.classTest == test$diabetes)
@@ -1466,16 +1478,17 @@ rocCurve.rf <- roc(test$diabetes, rf.probs[,"neg"])
 auc(rocCurve.rf)
 ```
 
-
 ```{r}
 # plot the ROC curve
 plot(rocCurve.tree,col=c(4))
 
 cat("Classification Tree",
     "\nAccuracy:", rf_accuracy,
-    "\nAUC:",auc(rocCurve.rf)
+    "\nAUC:", auc(rocCurve.rf)
     )
 ```
+
+In conclusion, the Random Forest shows the best Kappa and AUC among the models, indicating its slight advantage in discriminating between classes on the test set.All models achieve similar test set accuracy, but the Random Forest has a small improvement in sensitivity. Specificity is consistent across models, showing that all models have limitations in correctly identifying diabetic cases.
 
 ## d. Neural Network
 
@@ -1483,6 +1496,11 @@ cat("Classification Tree",
 library(tidyverse)
 library(neuralnet)
 ```
+
+In this problem, I am using a simple neural network. To prepare the data for the neural network, we need to:
+
+- Feature Scaling: Both the training and test sets were scaled to standardize the input features. This enhances training effectiveness and helps the model converge more quickly. It's particularly crucial in neural networks, as it ensures that each feature has a similar range, preventing any single feature from dominating the others.
+- Binary Conversion of Target Variable: The target variable (diabetes) was transformed into a binary format of 0 and 1, where 1 indicates a positive diagnosis (diabetic) and 0 indicates a negative diagnosis (non-diabetic).
 
 ```{r}
 # reference: https://www.datacamp.com/tutorial/neural-network-models-r
@@ -1500,6 +1518,8 @@ X_test_nn_scaled <- scale(X_test_nn)
 # Combine scaled features and labels for training
 train_combined <- cbind(X_train_nn_scaled, diabetes = y_train_nn)
 ```
+
+I selected the network size by starting with a larger number of neurons in the initial layers and progressively decreasing the number of neurons in each subsequent layer. Thus, there are four hidden layers containing 16, 8, 4, and 2 neurons, respectively. This configuration is often referred to as a funnel-shaped network, which is commonly used for binary classification tasks.
 
 ```{r}
 nn_model = neuralnet(
@@ -1539,6 +1559,8 @@ roc_curve_nn <- roc(test$diabetes, as.numeric(nn_pred_prob))
 auc_nn <- auc(roc_curve_nn)
 ```
 
+In conclusion, the Neural Network achieved 76.15% accuracy and an AUC of 0.8067 on the test set, which is comparable to the performance of the Random Forest. The architecture was selected with a funnel-shaped design to capture complex relationships and reduce data to simpler representations in the final layers.
+
 ```{r}
 # Plot the ROC curve
 plot(roc_curve_nn, col = "blue", main = "ROC Curve - Neural Network")
@@ -1549,20 +1571,9 @@ cat("Neural Network",
 )
 ```
 
-## e. Compare all models
+## e. Comparision
 
-- KNN 
-
-- Tree-based Method
-  
-  - Classification Tree
-  
-  - Ensemble of bagged trees
-  
-  - Random Forest 
-  
-- Neural Network
-
+I would choose Random Forest as the preferred method because (i) it achieves a strong balance between high accuracy and AUC, making it one of the top performers in both metrics, and (ii) it offers feature importance scores, allowing us to identify key predictors (such as glucose and insulin). This interpretability is especially valuable in medical or health-related data, where understanding influential factors is crucial for informed decision-making.
 
 ```{r}
 # Create a summary table for accuracy and AUC
