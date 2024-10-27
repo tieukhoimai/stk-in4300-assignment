@@ -599,7 +599,7 @@ cat(paste0(
 
 ```
 
-```{r}
+```{r, include=FALSE}
 plot(cv_ridge)
 ```
 
