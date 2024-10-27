@@ -2,11 +2,11 @@
 title: "Assignment 2"
 author: "Khoi Mai Tieu"
 output:
-  html_document:
-    df_print: paged
+  pdf_document: 
     toc: true
     toc_depth: 3
-  pdf_document: 
+  html_document:
+    df_print: paged
     toc: true
     toc_depth: 3
 editor_options:
@@ -91,9 +91,9 @@ summary(model)
 
 We will predict the LC50 values on the training and test datasets to evaluate the model using these metrics:
 
-- Mean Squared Error (MSE): $MSE = \sum_{i=1}^{n}(x_i-y_i)^2$
-- Root Mean Squared Error (RMSE): $RMSE = \sqrt{MSE}$
-- R-squared: $R^2 = 1 - \frac{\sum_{i=1}^{n}(x_i-y_i)^2}{\sum_{i=1}^{n}(x_i-\bar{x})^2}$
+- Mean Squared Error (MSE)
+- Root Mean Squared Error (RMSE)
+- R-squared
    
 ```{r}
 # Predict on training and test datasets
@@ -120,7 +120,7 @@ r2_test <- 1 - (sum((test_i$LC50 - test_i$predicted_LC50)^2) /
             sum((test_i$LC50 - mean(test_i$LC50))^2))
 ```
 
-We have the following result for the model on the training and test set as follows.We see that the training and test set metrics are reasonably close, with R-squared values indicating that approximately 50% of the variance is explained by the model in the training set and around 43% in the test set, suggesting the model generalizes fairly well.
+We have the following result for the model on the training and test set as follows. We see that the training and test set metrics are reasonably close, with R-squared values indicating that approximately 50% of the variance is explained by the model in the training set and around 43% in the test set, suggesting the model generalizes fairly well.
 
 ```{r}
 cat(paste0(
@@ -301,18 +301,14 @@ grid.arrange(train_plot, test_plot, ncol = 2)
 
 In initial conclusion in one time spliting, the original model (without dummy encoding) provides a better fit to both the training and testing data, as evidenced by its closer alignment with the ideal prediction line and lower dispersion in the test data.
 
-This is likely because it retains the continuous information in the count variables, which adds more nuance to the model's predictions.
-So, in part b, we will draw a more reliable conclusion by repeating the procedure 200 times and comparing the average test errors.
+This is likely because it retains the continuous information in the count variables, which adds more nuance to the model's predictions. So, in part b, we will draw a more reliable conclusion by repeating the procedure 200 times and comparing the average test errors.
 
 ## b. Repeating the procedure 200 times
 
 Procedure
-
--   Randomly spiting training vs test set (2/3  vs 1/3).
-
--   Fit the models with 2 options (i) Original model and (ii) Dummy encoding.
-
--   Record the test errors (MSE/RMSE/$R^2$).
+- Randomly spiting training vs test set (2/3  vs 1/3).
+- Fit the models with 2 options (i) Original model and (ii) Dummy encoding.
+- Record the test errors (MSE/RMSE/$R^2$).
 
 ```{r}
 # Initialize vectors to store test errors
@@ -367,7 +363,6 @@ for (i in 1:200) {
 There are a few key reasons for repeating the procedure 200 times:
 
 - To reduce the influence of random data splits
-
 - To provide a more reliable estimate of the model's performance
 
 ```{r}
@@ -393,9 +388,7 @@ cat(paste0(
 ))
 ```
 
-The original model consistently achieves lower MSE and RMSE than the dummy-encoded model, as indicated by the density distributions.
-The peak of the distribution for the original model is shifted left compared to the dummy model, meaning the original model typically has smaller test errors.
-The dummy-encoded model shows slightly larger and more spread-out test errors, indicating poorer performance.
+The original model consistently achieves lower MSE and RMSE than the dummy-encoded model, as indicated by the density distributions. The peak of the distribution for the original model is shifted left compared to the dummy model, meaning the original model typically has smaller test errors. The dummy-encoded model shows slightly larger and more spread-out test errors, indicating poorer performance.
 
 ```{r}
 # Create data frames for plotting
@@ -436,10 +429,8 @@ ggplot(errors_df, aes(x = Metric, y = Error, fill = Model)) +
   theme(legend.position = "top")
 ```
 
-In conclusion, the higher test errors and greater variability of the dummy-encoded model (option ii) occur 
-because it sacrifices important information present in the original continuous variables.
+In conclusion, the higher test errors and greater variability of the dummy-encoded model (option ii) occur because it sacrifices important information present in the original continuous variables.
 Repeating the process confirms that the original model (option i) is generally superior.
-
 
 ## c. Variable selection procedures
 
@@ -464,7 +455,6 @@ num_vars <- ncol(train) - 1  # exclude the response variable column
 Forward Selection is a stepwise regression method that starts with an empty model and adds predictors one by one based on a criterion (e.g., AIC, BIC) until no more predictors can be added.
   
 - Key variables that were consistently selected include MLOGP, TPSA, SAacc, nN, RDCHI, and GATS1p.
-  
 - Both AIC and BIC agreed on the significance of these variables. However, BIC, being stricter, might lead to simpler models in other datasets, but in this case, the results remained the same across both criteria.
 
 ```{r}
@@ -479,14 +469,11 @@ model.forward.bic <- stepAIC(null.model, scope = list(lower = null.model, upper 
 summary(model.forward.bic)
 ```
 
-
-
 ### Backward Elimination
 
 Backward Elimination is a stepwise regression method that starts with the full model and removes predictors one by one based on a criterion (e.g., AIC, BIC) until no more predictors can be removed.
 
 - Similar to forward selection, backward elimination with both AIC and BIC resulted in a model that includes MLOGP, TPSA, SAacc, nN, RDCHI, and GATS1p.
-
 - The consistency between forward and backward selection indicates that these predictors are strong, regardless of the method or criterion (AIC vs. BIC) used.
 
 ```{r}
@@ -499,13 +486,11 @@ model.backward.bic <- stepAIC(full.model, direction = 'backward', k = log(nrow(t
 summary(model.backward.bic)
 ```
 
-
 ### Stepwise Selection
 
 Stepwise Selection is a combination of forward and backward selection, where predictors are added or removed based on a criterion (e.g., AIC, BIC) until no more changes can be made.
 
 - The stepwise selection, which combines both forward and backward methods, also identified the same set of variables: MLOGP, TPSA, SAacc, nN, RDCHI, and GATS1p.
-
 - There is no significant difference between the AIC and BIC results in this specific case.
 
 ```{r}
@@ -672,8 +657,7 @@ cat(paste0(
 
 ### Cross Validation vs Bootstrap Comparision
 
-Using both cross-validation and bootstrap procedures, the optimal complexity parameter ($\lambda$) was found to be approximately 0.017 using cross-validation and 0.013 using bootstrap.
-The performance of the ridge regression was very similar under both methods, with test set MSE around 1.40 and R-squared about 0.43, slightly better than the dummy encoded linear regression but on par with the original linear model.
+Using both cross-validation and bootstrap procedures, the optimal complexity parameter ($\lambda$) was found to be approximately 0.017 using cross-validation and 0.013 using bootstrap. The performance of the ridge regression was very similar under both methods, with test set MSE around 1.40 and R-squared about 0.43, slightly better than the dummy encoded linear regression but on par with the original linear model.
 
 In the plot below, we observed that the both cross-validation and bootstrap should provide similar $\lambda$ values, but cross-validation typically has less variance in error estimates compared to bootstrap.
 
@@ -788,8 +772,7 @@ cat(paste0(
 ))
 ```
 
-In conclusion, fitting GAM models with different levels of smoothing complexity (k=4 and k=6) showed that increasing complexity slightly improved the fit, with R^2 improving from 0.43 to 0.45 and RMSE decreasing from 1.19 to 1.17.
-However, the benefit of increasing complexity is relatively minor, suggesting that moderate smoothing (k=4) suffices for this problem without introducing too much overfitting.
+In conclusion, fitting GAM models with different levels of smoothing complexity (k=4 and k=6) showed that increasing complexity slightly improved the fit, with R^2 improving from 0.43 to 0.45 and RMSE decreasing from 1.19 to 1.17. However, the benefit of increasing complexity is relatively minor, suggesting that moderate smoothing (k=4) suffices for this problem without introducing too much overfitting.
 
 ## f. Regression Tree with Cost-Complexity Pruning
 
@@ -812,9 +795,7 @@ The root node splits based on MLOGP (lipophilicity), which is the most important
 The tree continues to split based on other descriptors, such as:
 
 - RDCHI (topological index), which also be the first split in the tree
-  
 - C040 (the number of certain carbon atoms)
-  
 - TPSA (polar surface area)
 
 The terminal nodes represent the predicted LC50 values for the corresponding groups of observations.
@@ -1006,7 +987,6 @@ for(i in seq_along(ex_seq)) {
 
 ex_storage
 ```
-
 We see that $k = 9$ are tied for the highest accuracy. Also notice that, as $k$ increases, eventually the accuracy approaches the test prevalence.
 
 ```{r}
@@ -1098,7 +1078,7 @@ abline(v = cv_results$k[which.max(cv_results$Accuracy)],
 abline(h = max(cv_results$Accuracy), col = "grey", lty = 2)
 ```
 
-Applying 5-fold CV, k = 8 is the optimal number of neighbors for the k-NN model. And the model achieved an accuracy of 75.57% on the test set. 
+Applying 5-fold CV, k = 8 is the optimal number of neighbors for the k-NN model. And the model achieved an accuracy of 75.57% on the test set.
 
 ```{r}
 cat("k-NN (5 fold CV)",
@@ -1276,7 +1256,6 @@ cat("\nAUC:", auc_gam, "\n")
 # Plot ROC
 plot(roc_curve_gam)
 ```
-
 In conclusion, The GAM model with spline smoothing achieves a test accuracy of 77.69%. The AUC for GAM is 0.833, indicating that it has strong performance in distinguishing between diabetic and non-diabetic individuals.
 
 ## c. Tree-based methods
