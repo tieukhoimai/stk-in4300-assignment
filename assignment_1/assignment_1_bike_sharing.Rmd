@@ -1,10 +1,10 @@
 ---
 title: "Assignment 1: Bike Sharing"
-date: "2024-09-16"
+author: "Khoi Mai Tieu"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
 ```{r setup, results='hide', include=FALSE}
